@@ -1,0 +1,40 @@
+{
+    "language": "de",
+    "messages": [
+        {
+            "id": "Status",
+            "message": "Status",
+            "translation": "Status"
+        },
+        {
+            "id": "Show Status",
+            "message": "Show Status",
+            "translation": "Status anzeigen"
+        },
+        {
+            "id": "Connect VPN",
+            "message": "Connect VPN",
+            "translation": "VPN verbinden"
+        },
+        {
+            "id": "Connect to VPN",
+            "message": "Connect to VPN",
+            "translation": "Mit dem VPN verbinden"
+        },
+        {
+            "id": "Connect",
+            "message": "Connect",
+            "translation": "Verbinden"
+        },
+        {
+            "id": "Password",
+            "message": "Password",
+            "translation": "Passwort"
+        },
+        {
+            "id": "Error!",
+            "message": "Error!",
+            "translation": "Fehler!"
+        }
+    ]
+}

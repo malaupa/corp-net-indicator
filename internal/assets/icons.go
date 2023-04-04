@@ -5,27 +5,19 @@ import "embed"
 //go:embed icons/*
 var icons embed.FS
 
-type Icon int
+type Icon string
 
 const (
-	ShieldOff Icon = iota
-	ShieldOn
-	Umbrella
+	ShieldOff  Icon = "icons/shield_off.png"
+	ShieldOn   Icon = "icons/shield.png"
+	Umbrella   Icon = "icons/umbrella.png"
+	Connect    Icon = "icons/connect.png"
+	Disconnect Icon = "icons/disconnect.png"
+	Status     Icon = "icons/activity.png"
 )
 
-func (i Icon) fileName() string {
-	switch i {
-	case ShieldOn:
-		return "icons/shield.png"
-	case Umbrella:
-		return "icons/umbrella.png"
-	default:
-		return "icons/shield_off.png"
-	}
-}
-
 func GetIcon(file Icon) []byte {
-	data, err := icons.ReadFile(file.fileName())
+	data, err := icons.ReadFile(string(file))
 	if err != nil {
 		panic(err)
 	}

@@ -1,6 +1,8 @@
 package main
 
-import "de.telekom-mms.corp-net-indicator/internal/tray"
+import (
+	"de.telekom-mms.corp-net-indicator/internal/tray"
+)
 
 // entry point
 func main() {

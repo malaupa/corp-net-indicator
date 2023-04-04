@@ -1,0 +1,54 @@
+{
+    "language": "en",
+    "messages": [
+        {
+            "id": "Status",
+            "message": "Status",
+            "translation": "Status",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Show Status",
+            "message": "Show Status",
+            "translation": "Show Status",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connect VPN",
+            "message": "Connect VPN",
+            "translation": "Connect VPN",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connect to VPN",
+            "message": "Connect to VPN",
+            "translation": "Connect to VPN",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connect",
+            "message": "Connect",
+            "translation": "Connect",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Password",
+            "message": "Password",
+            "translation": "Password",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Error!",
+            "message": "Error!",
+            "translation": "Error!",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        }
+    ]
+}
