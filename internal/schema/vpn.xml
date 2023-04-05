@@ -1,0 +1,25 @@
+<node>
+  <interface name="de.telekomMMS.openconnect">
+    <!-- Properties -->
+    <property name="Version" type="u" access="read"/>
+    <property name="Status" type="(bbss)" access="read"/>
+    <!-- Methods -->
+    <method name="GetStatus">
+      <!-- b: trusted network, b: connected, s: device, s: IP -->
+      <arg type="(bbss)" name="status" direction="out"/>
+    </method>
+    <method name="Connect">
+      <arg type="s" name="password" direction="in"/>
+    </method>
+    <method name="Disconnect">
+    </method>
+    <method name="ListServers">
+      <arg type="as" name="servers" direction="out"/>
+    </method>
+    <signal name="StatusChange">
+      <!-- b: trusted network, b: connected, s: device, s: IP -->
+      <arg type="(bbss)" name="status" direction="out"/>
+    </signal>
+  </interface>
+  {{.IntrospectDataString}}
+</node>

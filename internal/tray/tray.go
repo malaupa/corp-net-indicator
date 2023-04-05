@@ -19,8 +19,15 @@ func onReady() {
 	systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 	sItem := systray.AddMenuItem(l.Sprintf("Status"), l.Sprintf("Show Status"))
 	sItem.SetIcon(assets.GetIcon(assets.Status))
+	go func() {
+		for {
+			<-sItem.ClickedCh
+			ui.OpenStatusWindow()
+		}
+	}()
 
 	// TODO detect current state -> dbus
+	systray.AddSeparator()
 	cItem := systray.AddMenuItem(l.Sprintf("Connect VPN"), l.Sprintf("Connect to VPN"))
 	cItem.SetIcon(assets.GetIcon(assets.Connect))
 	go func() {
@@ -29,7 +36,6 @@ func onReady() {
 			ui.OpenConnectWindow()
 		}
 	}()
-
 }
 
 // destroy tray
