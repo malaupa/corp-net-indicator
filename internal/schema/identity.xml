@@ -13,5 +13,4 @@
       <arg type="a{sv}" name="status" direction="out"/>
     </signal>
   </interface>
-  {{.IntrospectDataString}}
 </node>

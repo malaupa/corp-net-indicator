@@ -21,5 +21,4 @@
       <arg type="(bbss)" name="status" direction="out"/>
     </signal>
   </interface>
-  {{.IntrospectDataString}}
 </node>

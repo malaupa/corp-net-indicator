@@ -10,12 +10,14 @@ import (
 )
 
 func OpenConnectWindow() {
-	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
-	app.ConnectActivate(func() { openConnectDialog(app) })
+	go func() {
+		app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
+		app.ConnectActivate(func() { openConnectDialog(app) })
 
-	if code := app.Run(os.Args); code > 0 {
-		os.Exit(code)
-	}
+		if code := app.Run(os.Args); code > 0 {
+			os.Exit(code)
+		}
+	}()
 }
 
 func openConnectDialog(app *gtk.Application) {

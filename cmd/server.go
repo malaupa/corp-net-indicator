@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"de.telekom-mms.corp-net-indicator/internal/generated/identity"
 	"github.com/godbus/dbus/v5"
@@ -98,5 +99,21 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Listening on interface - %v and path %v ...\n", DBUS_SERVICE_NAME, DBUS_OBJECT_PATH)
-	select {}
+	// select {}
+	t, l := true, false
+	for {
+		time.Sleep(time.Second * 10)
+		status := map[string]dbus.Variant{"TrustedNetwork": dbus.MakeVariant(t), "LoggedIn": dbus.MakeVariant(l)}
+		props.SetMust(DBUS_SERVICE_NAME, "Status", status)
+		if err := identity.Emit(conn, &identity.IdentityStatusChangeSignal{
+			Path: DBUS_OBJECT_PATH,
+			Body: &identity.IdentityStatusChangeSignalBody{
+				Status: status,
+			},
+		}); err != nil {
+			log.Println(err)
+		}
+
+		l = !l
+	}
 }

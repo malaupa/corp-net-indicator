@@ -6,6 +6,5 @@ import (
 
 // entry point
 func main() {
-	// start tray
 	tray.Run()
 }
