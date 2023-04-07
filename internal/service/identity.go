@@ -4,7 +4,7 @@ import (
 	"context"
 	"log"
 
-	"de.telekom-mms.corp-net-indicator/internal/generated/identity"
+	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/client"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )

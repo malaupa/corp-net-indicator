@@ -1,8 +1,10 @@
 package model
 
 type IdentityStatus struct {
-	TrustedNetwork bool
-	LoggedIn       bool
+	TrustedNetwork  bool
+	LoggedIn        bool
+	LastKeepAliveAt int64
+	KrbIssuedAt     int64
 }
 
 type VPNStatus struct {
@@ -10,6 +12,8 @@ type VPNStatus struct {
 	Connected      bool
 	IP             string
 	Device         string
+	ConnectedAt    int64
+	CertExpiresAt  int64
 }
 
 type Details struct {

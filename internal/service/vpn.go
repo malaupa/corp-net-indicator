@@ -24,8 +24,8 @@ func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
 	return v.statusChan
 }
 
-func (v *VPN) Connect(password string) {
-
+func (v *VPN) Connect(password string, server string) error {
+	return nil
 }
 
 func (v *VPN) Disconnect() {

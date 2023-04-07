@@ -1,6 +1,9 @@
 package main
 
-//go:generate dbus-codegen-go -prefix de.telekomMMS -package identity -camelize -output ../internal/generated/identity/identity.go ../internal/schema/identity.xml
+//go:generate dbus-codegen-go -prefix de.telekomMMS -package identity -camelize -output ../internal/generated/identity/server/server.go ../internal/schema/identity.xml
+//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package identity -camelize -output ../internal/generated/identity/client/client.go ../internal/schema/identity.xml
+//go:generate dbus-codegen-go -prefix de.telekomMMS -package vpn -camelize -output ../internal/generated/vpn/server/server.go ../internal/schema/vpn.xml
+//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package vpn -camelize -output ../internal/generated/vpn/client/client.go ../internal/schema/vpn.xml
 
 import (
 	_ "embed"
@@ -9,24 +12,30 @@ import (
 	"os"
 	"time"
 
-	"de.telekom-mms.corp-net-indicator/internal/generated/identity"
+	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/server"
+	vpn "de.telekom-mms.corp-net-indicator/internal/generated/vpn/server"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 )
 
-const DBUS_SERVICE_NAME = "de.telekomMMS.identity"
-const DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
+const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
+const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
+const V_DBUS_SERVICE_NAME = "de.telekomMMS.vpn"
+const V_DBUS_OBJECT_PATH = "/de/telekomMMS/vpn"
 
-var props *prop.Properties
+var conn *dbus.Conn
+var systemConn *dbus.Conn
+var iProps *prop.Properties
+var vProps *prop.Properties
 
 type Identity struct {
 	*identity.UnimplementedIdentity
 }
 
 func (i Identity) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
-	log.Println("GetStatus called!")
-	variant, err := props.Get(DBUS_SERVICE_NAME, "Status")
+	log.Println("Identity: GetStatus called!")
+	variant, err := iProps.Get(I_DBUS_SERVICE_NAME, "Status")
 	value := variant.Value()
 	if v, ok := value.(map[string]dbus.Variant); ok {
 		return v, err
@@ -35,42 +44,141 @@ func (i Identity) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
 }
 
 func (i Identity) ReLogin() *dbus.Error {
-	log.Println("ReLogin called!")
-	return props.Set(DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(map[string]dbus.Variant{"TrustedNetwork": dbus.MakeVariant(true), "LoggedIn": dbus.MakeVariant(true)}))
+	log.Println("Identity: ReLogin called!")
+	status := buildIdentityStatus(true)
+	err := iProps.Set(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
+	if err != nil {
+		return err
+	}
+	emitIdentitySignal(status)
+	return nil
 }
 
+func emitIdentitySignal(status map[string]dbus.Variant) {
+	if err := identity.Emit(conn, &identity.IdentityStatusChangeSignal{
+		Path: I_DBUS_OBJECT_PATH,
+		Body: &identity.IdentityStatusChangeSignalBody{
+			Status: status,
+		},
+	}); err != nil {
+		log.Println(err)
+	}
+}
+
+func buildIdentityStatus(loggedIn bool) map[string]dbus.Variant {
+	return map[string]dbus.Variant{
+		"TrustedNetwork":  dbus.MakeVariant(true),
+		"LoggedIn":        dbus.MakeVariant(loggedIn),
+		"LastKeepAliveAt": dbus.MakeVariant(time.Now().Unix()),
+		"KrbIssuedAt":     dbus.MakeVariant(time.Now().Unix() - 60*60),
+	}
+}
+
+type VPN struct {
+	*vpn.UnimplementedVpn
+}
+
+func (v VPN) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
+	log.Println("VPN: GetStatus called!")
+	variant, err := vProps.Get(V_DBUS_SERVICE_NAME, "Status")
+	value := variant.Value()
+	if v, ok := value.(map[string]dbus.Variant); ok {
+		return v, err
+	}
+	return map[string]dbus.Variant{}, err
+}
+
+func (v VPN) Connect(password string, server string) *dbus.Error {
+	log.Printf("VPN: Connect called! Password[%s] Server[%s]\n", password, server)
+	return setAndEmitVPNStatus(true)
+}
+
+func (v VPN) Disconnect() *dbus.Error {
+	return setAndEmitVPNStatus(false)
+}
+
+func (v VPN) ListServers() (servers []string, err *dbus.Error) {
+	return []string{
+		"server1.example.com",
+		"server2.example.com",
+		"server3.example.com",
+	}, nil
+}
+
+func setAndEmitVPNStatus(connected bool) *dbus.Error {
+	status := buildVPNStatus(connected)
+	err := vProps.Set(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
+	if err != nil {
+		return err
+	}
+	emitVPNSignal(status)
+	return nil
+}
+
+func buildVPNStatus(connected bool) map[string]dbus.Variant {
+	return map[string]dbus.Variant{
+		"TrustedNetwork": dbus.MakeVariant(false),
+		"Connected":      dbus.MakeVariant(connected),
+		"IP":             dbus.MakeVariant("127.0.0.1"),
+		"Device":         dbus.MakeVariant("vpn-tun0"),
+		"ConnectedAt":    dbus.MakeVariant(time.Now().Unix()),
+		"CertExpiresAt":  dbus.MakeVariant(time.Now().Unix() + 60*60*24*365),
+	}
+}
+
+func emitVPNSignal(status map[string]dbus.Variant) {
+	if err := vpn.Emit(conn, &vpn.VpnStatusChangeSignal{
+		Path: V_DBUS_OBJECT_PATH,
+		Body: &vpn.VpnStatusChangeSignalBody{
+			Status: status,
+		},
+	}); err != nil {
+		log.Println(err)
+	}
+}
+
+// func init() {
+// 	runtime.LockOSThread()
+// }
+
 func main() {
-	// debus connection
-	conn, err := dbus.ConnectSessionBus()
+	// dbus connection
+	var err error
+	conn, err = dbus.ConnectSessionBus()
 	if err != nil {
 		panic(err)
 	}
 	defer conn.Close()
+	systemConn, err = dbus.ConnectSystemBus()
+	if err != nil {
+		panic(err)
+	}
+	defer systemConn.Close()
 
-	// introspection
+	// identity introspection
 	node := introspect.Node{
-		Name: DBUS_OBJECT_PATH,
+		Name: I_DBUS_OBJECT_PATH,
 		Interfaces: []introspect.Interface{
 			introspect.IntrospectData,
 			prop.IntrospectData,
 			identity.IntrospectDataIdentity,
 		},
 	}
-	err = conn.Export(introspect.NewIntrospectable(&node), DBUS_OBJECT_PATH,
+	err = conn.Export(introspect.NewIntrospectable(&node), I_DBUS_OBJECT_PATH,
 		"org.freedesktop.DBus.Introspectable")
 	if err != nil {
 		log.Printf("failed to export node introspection: %s\n", err)
 		return
 	}
-	// methods
+	// identity methods
 	i := Identity{}
-	err = identity.ExportIdentity(conn, DBUS_OBJECT_PATH, i)
+	err = identity.ExportIdentity(conn, I_DBUS_OBJECT_PATH, i)
 	if err != nil {
 		panic(err)
 	}
-	// props
-	props, err = prop.Export(conn, DBUS_OBJECT_PATH, map[string]map[string]*prop.Prop{
-		DBUS_SERVICE_NAME: {
+	// identity props
+	iProps, err = prop.Export(conn, I_DBUS_OBJECT_PATH, map[string]map[string]*prop.Prop{
+		I_DBUS_SERVICE_NAME: {
 			"Version": {
 				Value:    1,
 				Writable: false,
@@ -78,7 +186,7 @@ func main() {
 				Callback: nil,
 			},
 			"Status": {
-				Value:    map[string]dbus.Variant{"TrustedNetwork": dbus.MakeVariant(false), "LoggedIn": dbus.MakeVariant(false)},
+				Value:    buildIdentityStatus(false),
 				Writable: true,
 				Emit:     prop.EmitTrue,
 				Callback: nil,
@@ -89,7 +197,7 @@ func main() {
 		panic(err)
 	}
 
-	reply, err := conn.RequestName(DBUS_SERVICE_NAME,
+	reply, err := conn.RequestName(I_DBUS_SERVICE_NAME,
 		dbus.NameFlagDoNotQueue)
 	if err != nil {
 		panic(err)
@@ -98,21 +206,68 @@ func main() {
 		fmt.Fprintln(os.Stderr, "name already taken")
 		os.Exit(1)
 	}
-	fmt.Printf("Listening on interface - %v and path %v ...\n", DBUS_SERVICE_NAME, DBUS_OBJECT_PATH)
-	// select {}
-	t, l := true, false
+	fmt.Printf("Listening on interface - %v and path %v ...\n", I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH)
+
+	// vpn introspection
+	vNode := introspect.Node{
+		Name: V_DBUS_OBJECT_PATH,
+		Interfaces: []introspect.Interface{
+			introspect.IntrospectData,
+			prop.IntrospectData,
+			vpn.IntrospectDataVpn,
+		},
+	}
+	err = systemConn.Export(introspect.NewIntrospectable(&vNode), V_DBUS_OBJECT_PATH,
+		"org.freedesktop.DBus.Introspectable")
+	if err != nil {
+		log.Printf("failed to export node introspection: %s\n", err)
+		return
+	}
+	// vpn methods
+	v := VPN{}
+	err = vpn.ExportVpn(systemConn, V_DBUS_OBJECT_PATH, v)
+	if err != nil {
+		panic(err)
+	}
+	// identity props
+	vProps, err = prop.Export(systemConn, V_DBUS_OBJECT_PATH, map[string]map[string]*prop.Prop{
+		V_DBUS_SERVICE_NAME: {
+			"Version": {
+				Value:    1,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
+			},
+			"Status": {
+				Value:    buildVPNStatus(false),
+				Writable: true,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	reply, err = systemConn.RequestName(V_DBUS_SERVICE_NAME,
+		dbus.NameFlagDoNotQueue)
+	if err != nil {
+		panic(err)
+	}
+	if reply != dbus.RequestNameReplyPrimaryOwner {
+		fmt.Fprintln(os.Stderr, "name already taken")
+		os.Exit(1)
+	}
+	fmt.Printf("Listening on interface - %v and path %v ...\n", V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH)
+
+	l := false
 	for {
 		time.Sleep(time.Second * 10)
-		status := map[string]dbus.Variant{"TrustedNetwork": dbus.MakeVariant(t), "LoggedIn": dbus.MakeVariant(l)}
-		props.SetMust(DBUS_SERVICE_NAME, "Status", status)
-		if err := identity.Emit(conn, &identity.IdentityStatusChangeSignal{
-			Path: DBUS_OBJECT_PATH,
-			Body: &identity.IdentityStatusChangeSignalBody{
-				Status: status,
-			},
-		}); err != nil {
-			log.Println(err)
-		}
+		status := buildIdentityStatus(l)
+		log.Printf("%v\n", status)
+		iProps.SetMust(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
+		emitIdentitySignal(status)
 
 		l = !l
 	}

@@ -1,8 +1,6 @@
 package tray
 
 import (
-	"log"
-
 	"de.telekom-mms.corp-net-indicator/internal/assets"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -39,39 +37,48 @@ func onReady() {
 	t.trigger.Hide()
 
 	// create services
-	iService := service.NewIdentityService()
-	vService := service.NewVPNService()
+	iSer := service.NewIdentityService()
+	vSer := service.NewVPNService()
 	// update tray
-	t.UpdateIdentity(iService.GetStatus())
-	t.UpdateVPN(vService.GetStatus())
+	t.UpdateIdentity(iSer.GetStatus())
+	t.UpdateVPN(vSer.GetStatus())
 
 	// listen to status changes
-	iListener := iService.ListenToIdentity()
-	vListener := vService.ListenToVPN()
+	iChan := iSer.ListenToIdentity()
+	vChan := vSer.ListenToVPN()
 
 	// init window
-	statusWindow := ui.NewStatusWindow()
+	sw := ui.NewStatusWindow()
 
 	// main loop
 	for {
 		select {
+		// handle tray menu clicks
 		case <-t.status.ClickedCh:
-			statusWindow.Open(&model.Details{Identity: iService.GetStatus(), VPN: vService.GetStatus()}, false)
+			sw.Open(iSer.GetStatus(), vSer.GetStatus(), false)
 		case <-t.trigger.ClickedCh:
 			if t.connected {
-				vService.Disconnect()
+				vSer.Disconnect()
 			} else {
-				statusWindow.Open(&model.Details{Identity: iService.GetStatus(), VPN: vService.GetStatus()}, true)
+				sw.Open(iSer.GetStatus(), vSer.GetStatus(), true)
 			}
-		case i := <-iListener:
-			log.Println("loop")
-			log.Println(i)
-			select {
-			case statusWindow.IdentityChan <- i:
-			default:
+		// handle window clicks
+		case c := <-sw.ConnectDisconnectClicked:
+			if c != nil {
+				if err := vSer.Connect(c.Password, c.Server); err != nil {
+					sw.NotifyError(err)
+				}
+			} else {
+				vSer.Disconnect()
 			}
+		case <-sw.ReLoginClicked:
+			iSer.ReLogin()
+		// handle status updates
+		case i := <-iChan:
+			sw.IdentityUpdate(i)
 			t.UpdateIdentity(i)
-		case v := <-vListener:
+		case v := <-vChan:
+			sw.VPNUpdate(v)
 			t.UpdateVPN(v)
 		}
 	}

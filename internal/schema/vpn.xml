@@ -1,15 +1,15 @@
 <node>
-  <interface name="de.telekomMMS.openconnect">
+  <interface name="de.telekomMMS.vpn">
     <!-- Properties -->
     <property name="Version" type="u" access="read"/>
-    <property name="Status" type="(bbss)" access="read"/>
+    <property name="Status" type="a{sv}" access="read"/>
     <!-- Methods -->
     <method name="GetStatus">
-      <!-- b: trusted network, b: connected, s: device, s: IP -->
-      <arg type="(bbss)" name="status" direction="out"/>
+      <arg type="a{sv}" name="status" direction="out"/>
     </method>
     <method name="Connect">
       <arg type="s" name="password" direction="in"/>
+      <arg type="s" name="server" direction="in"/>
     </method>
     <method name="Disconnect">
     </method>
@@ -17,8 +17,7 @@
       <arg type="as" name="servers" direction="out"/>
     </method>
     <signal name="StatusChange">
-      <!-- b: trusted network, b: connected, s: device, s: IP -->
-      <arg type="(bbss)" name="status" direction="out"/>
+      <arg type="a{sv}" name="status" direction="out"/>
     </signal>
   </interface>
 </node>
