@@ -15,8 +15,3 @@ type VPNStatus struct {
 	ConnectedAt    int64
 	CertExpiresAt  int64
 }
-
-type Details struct {
-	Identity *IdentityStatus
-	VPN      *VPNStatus
-}

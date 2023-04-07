@@ -27,6 +27,13 @@ type StatusWindow struct {
 	reLoginBtn       *gtk.Button
 
 	// vpn data
+	trustedNetworkImg *gtk.Image
+	connectedImg      *gtk.Image
+	actionBtn         *gtk.Button
+	connectedAtLabel  *gtk.Label
+	ipLabel           *gtk.Label
+	deviceLabel       *gtk.Label
+	certExpiresLabel  *gtk.Label
 }
 
 func NewStatusWindow() *StatusWindow {
@@ -64,21 +71,46 @@ func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, connec
 }
 
 func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
-	go func() {
-		glib.IdleAdd(func() {
-			if u.LoggedIn {
-				sw.loggedInImg.SetFromIconName("emblem-default")
-			} else {
-				sw.loggedInImg.SetFromIconName("emblem-important")
-			}
-			sw.keepAliveAtLabel.SetText(formatDate(u.LastKeepAliveAt))
-			sw.krbIssuedAtLabel.SetText(formatDate(u.KrbIssuedAt))
-		})
-	}()
+	if sw.loggedInImg == nil {
+		return
+	}
+	glib.IdleAdd(func() {
+		setStatusIcon(sw.loggedInImg, u.LoggedIn)
+		sw.keepAliveAtLabel.SetText(formatDate(u.LastKeepAliveAt))
+		sw.krbIssuedAtLabel.SetText(formatDate(u.KrbIssuedAt))
+	})
 }
 
 func (sw *StatusWindow) VPNUpdate(u *model.VPNStatus) {
-	// TODO implement
+	l := i18n.Localizer()
+	if sw.trustedNetworkImg == nil {
+		return
+	}
+	glib.IdleAdd(func() {
+		setStatusIcon(sw.trustedNetworkImg, u.TrustedNetwork)
+		setStatusIcon(sw.connectedImg, u.Connected)
+		sw.connectedAtLabel.SetText(formatDate(u.ConnectedAt))
+		if u.Connected {
+			sw.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+		} else {
+			sw.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
+		}
+		if u.TrustedNetwork {
+			sw.actionBtn.SetCanFocus(false)
+			sw.actionBtn.SetCanTarget(false)
+		} else {
+			sw.actionBtn.SetCanFocus(true)
+			sw.actionBtn.SetCanTarget(true)
+		}
+		if !u.Connected && !u.TrustedNetwork {
+			setStatusIcon(sw.loggedInImg, false)
+			sw.reLoginBtn.SetCanFocus(false)
+			sw.reLoginBtn.SetCanTarget(false)
+		} else {
+			sw.reLoginBtn.SetCanFocus(true)
+			sw.reLoginBtn.SetCanTarget(true)
+		}
+	})
 }
 
 func (sw *StatusWindow) NotifyError(err error) {
@@ -86,55 +118,88 @@ func (sw *StatusWindow) NotifyError(err error) {
 }
 
 func (sw *StatusWindow) buildDetails(i *model.IdentityStatus, v *model.VPNStatus) *gtk.Box {
-	l := i18n.Localizer()
-
 	box := gtk.NewBox(gtk.OrientationVertical, 0)
 	box.SetMarginTop(30)
 	box.SetMarginBottom(30)
 	box.SetMarginStart(60)
 	box.SetMarginEnd(60)
 
-	identityBox := sw.buildIdentity(i)
-	box.Append(identityBox)
+	box.Append(sw.buildIdentity(i))
+	box.Append(sw.buildVPN(v))
 
 	// button box
 	btnBox := gtk.NewBox(gtk.OrientationHorizontal, 10)
 	btnBox.SetMarginBottom(10)
 	btnBox.SetHAlign(gtk.AlignEnd)
 
-	// action button
-	var btnLabel string
-	if v.Connected {
-		btnLabel = l.Sprintf("Disconnect to VPN")
-	} else {
-		btnLabel = l.Sprintf("Connect to VPN")
-	}
-	actionBtn := gtk.NewButtonWithLabel(btnLabel)
-	actionBtn.SetHAlign(gtk.AlignEnd)
-	btnBox.Append(actionBtn)
-	box.Append(btnBox)
-
 	return box
 }
 
 func (sw *StatusWindow) buildIdentity(identity *model.IdentityStatus) gtk.Widgetter {
-	sw.reLoginBtn = gtk.NewButtonWithLabel("ReLogin")
-	box, list := buildListBoxBase("Identity Detail", nil)
-	if identity.LoggedIn {
-		sw.loggedInImg = gtk.NewImageFromIconName("emblem-default")
-	} else {
-		sw.loggedInImg = gtk.NewImageFromIconName("emblem-important")
-	}
-	sw.loggedInImg.SetIconSize(gtk.IconSizeNormal)
-	list.Append(addRow(gtk.NewLabel("Logged in"), sw.loggedInImg, sw.reLoginBtn))
+	l := i18n.Localizer()
+	box, list := buildListBoxBase("Identity Details")
+	sw.reLoginBtn = gtk.NewButtonWithLabel(l.Sprintf("ReLogin"))
+	sw.loggedInImg = buildStatusIcon(identity.LoggedIn)
+	list.Append(addRow(l.Sprintf("Logged in"), sw.reLoginBtn, sw.loggedInImg))
 	sw.keepAliveAtLabel = gtk.NewLabel(formatDate(identity.LastKeepAliveAt))
-	list.Append(addRow(gtk.NewLabel("Last Refresh"), sw.keepAliveAtLabel))
+	list.Append(addRow(l.Sprintf("Last Refresh"), sw.keepAliveAtLabel))
 	sw.krbIssuedAtLabel = gtk.NewLabel(formatDate(identity.KrbIssuedAt))
-	list.Append(addRow(gtk.NewLabel("Kerberos ticket issued"), sw.krbIssuedAtLabel))
+	list.Append(addRow(l.Sprintf("Kerberos ticket issued"), sw.krbIssuedAtLabel))
 	return box
 }
 
-func buildListBoxBase(title string, titleBtn *gtk.Button) (gtk.Widgetter, *gtk.ListBox) {
+func (sw *StatusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
+	l := i18n.Localizer()
+	box, list := buildListBoxBase("VPN Details")
+	sw.actionBtn = gtk.NewButtonWithLabel(l.Sprintf("Connect VPN"))
+	if vpn.Connected {
+		sw.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+	}
+	if vpn.TrustedNetwork {
+		sw.actionBtn.SetCanFocus(false)
+		sw.actionBtn.SetCanTarget(false)
+	}
+	sw.trustedNetworkImg = buildStatusIcon(vpn.TrustedNetwork)
+	list.Append(addRow(l.Sprintf("Trusted Network"), sw.trustedNetworkImg))
+	sw.connectedImg = buildStatusIcon(vpn.Connected)
+	list.Append(addRow(l.Sprintf("Connected"), sw.actionBtn, sw.connectedImg))
+	sw.connectedAtLabel = gtk.NewLabel(formatDate(vpn.ConnectedAt))
+	list.Append(addRow(l.Sprintf("Connect at"), sw.connectedAtLabel))
+	sw.ipLabel = gtk.NewLabel(vpn.IP)
+	list.Append(addRow(l.Sprintf("IP"), sw.ipLabel))
+	sw.deviceLabel = gtk.NewLabel(vpn.Device)
+	list.Append(addRow(l.Sprintf("Device"), sw.deviceLabel))
+	sw.certExpiresLabel = gtk.NewLabel(formatDate(vpn.CertExpiresAt))
+	list.Append(addRow(l.Sprintf("Certificate expires"), sw.certExpiresLabel))
+	// set correct identity status
+	if !vpn.Connected && !vpn.TrustedNetwork {
+		setStatusIcon(sw.loggedInImg, false)
+		sw.reLoginBtn.SetCanFocus(false)
+		sw.reLoginBtn.SetCanTarget(false)
+	}
+	return box
+}
+
+func buildStatusIcon(check bool) *gtk.Image {
+	var icon *gtk.Image
+	if check {
+		icon = gtk.NewImageFromIconName("emblem-default")
+	} else {
+		icon = gtk.NewImageFromIconName("emblem-important")
+	}
+	icon.SetIconSize(gtk.IconSizeNormal)
+	return icon
+}
+
+func setStatusIcon(icon *gtk.Image, check bool) {
+	if check {
+		icon.SetFromIconName("emblem-default")
+	} else {
+		icon.SetFromIconName("emblem-important")
+	}
+}
+
+func buildListBoxBase(title string) (gtk.Widgetter, *gtk.ListBox) {
 	l := i18n.Localizer()
 	box := gtk.NewBox(gtk.OrientationVertical, 10)
 	box.SetMarginBottom(20)
@@ -142,17 +207,11 @@ func buildListBoxBase(title string, titleBtn *gtk.Button) (gtk.Widgetter, *gtk.L
 	list.SetSelectionMode(gtk.SelectionNone)
 	list.SetShowSeparators(true)
 	list.AddCSSClass("rich-list")
-	titleBox := gtk.NewBox(gtk.OrientationHorizontal, 10)
 	label := gtk.NewLabel(l.Sprint(title))
 	label.SetMarginBottom(10)
 	label.SetHAlign(gtk.AlignStart)
 	label.AddCSSClass("title-4")
-	titleBox.Append(label)
-	if titleBtn != nil {
-		titleBtn.SetHAlign(gtk.AlignEnd)
-		titleBox.Append(titleBtn)
-	}
-	box.Append(titleBox)
+	box.Append(label)
 	frame := gtk.NewFrame("")
 	frame.SetChild(list)
 	// frame.SetCanTarget(false)
@@ -160,8 +219,9 @@ func buildListBoxBase(title string, titleBtn *gtk.Button) (gtk.Widgetter, *gtk.L
 	return box, list
 }
 
-func addRow(label *gtk.Label, value ...gtk.Widgetter) *gtk.ListBoxRow {
+func addRow(labelText string, value ...gtk.Widgetter) *gtk.ListBoxRow {
 	box := gtk.NewBox(gtk.OrientationHorizontal, 10)
+	label := gtk.NewLabel(labelText)
 	label.SetHAlign(gtk.AlignStart)
 	label.SetHExpand(true)
 	box.Append(label)

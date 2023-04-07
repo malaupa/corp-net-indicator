@@ -13,6 +13,7 @@ type tray struct {
 	status  *systray.MenuItem
 	trigger *systray.MenuItem
 
+	trusted   bool
 	connected bool
 }
 
@@ -37,15 +38,15 @@ func onReady() {
 	t.trigger.Hide()
 
 	// create services
-	iSer := service.NewIdentityService()
 	vSer := service.NewVPNService()
+	iSer := service.NewIdentityService()
 	// update tray
-	t.UpdateIdentity(iSer.GetStatus())
 	t.UpdateVPN(vSer.GetStatus())
+	t.UpdateIdentity(iSer.GetStatus())
 
 	// listen to status changes
-	iChan := iSer.ListenToIdentity()
 	vChan := vSer.ListenToVPN()
+	iChan := iSer.ListenToIdentity()
 
 	// init window
 	sw := ui.NewStatusWindow()
@@ -93,27 +94,30 @@ func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
 	if identity.LoggedIn {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
-		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+		if t.connected {
+			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+		} else {
+			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
+		}
 	}
 }
 
 func (t *tray) UpdateVPN(vpn *model.VPNStatus) {
 	l := i18n.Localizer()
+	t.trusted = vpn.TrustedNetwork
 	t.connected = vpn.Connected
 	if vpn.Connected {
 		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		t.trigger.SetTitle(l.Sprintf("Disconnect VPN"))
-	} else {
-		if !vpn.TrustedNetwork {
-			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
-		}
-		t.trigger.SetTitle(l.Sprintf("Connect VPN"))
-	}
-	if vpn.TrustedNetwork {
-		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
-		t.trigger.Hide()
-	} else {
-		systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 		t.trigger.Show()
+	} else {
+		t.trigger.SetTitle(l.Sprintf("Connect VPN"))
+		if vpn.TrustedNetwork {
+			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+			t.trigger.Hide()
+		} else {
+			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
+			t.trigger.Show()
+		}
 	}
 }

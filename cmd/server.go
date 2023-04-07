@@ -90,11 +90,11 @@ func (v VPN) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
 
 func (v VPN) Connect(password string, server string) *dbus.Error {
 	log.Printf("VPN: Connect called! Password[%s] Server[%s]\n", password, server)
-	return setAndEmitVPNStatus(true)
+	return setAndEmitVPNStatus(false, true)
 }
 
 func (v VPN) Disconnect() *dbus.Error {
-	return setAndEmitVPNStatus(false)
+	return setAndEmitVPNStatus(false, false)
 }
 
 func (v VPN) ListServers() (servers []string, err *dbus.Error) {
@@ -105,8 +105,8 @@ func (v VPN) ListServers() (servers []string, err *dbus.Error) {
 	}, nil
 }
 
-func setAndEmitVPNStatus(connected bool) *dbus.Error {
-	status := buildVPNStatus(connected)
+func setAndEmitVPNStatus(trusted, connected bool) *dbus.Error {
+	status := buildVPNStatus(trusted, connected)
 	err := vProps.Set(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
 	if err != nil {
 		return err
@@ -115,9 +115,9 @@ func setAndEmitVPNStatus(connected bool) *dbus.Error {
 	return nil
 }
 
-func buildVPNStatus(connected bool) map[string]dbus.Variant {
+func buildVPNStatus(trusted, connected bool) map[string]dbus.Variant {
 	return map[string]dbus.Variant{
-		"TrustedNetwork": dbus.MakeVariant(false),
+		"TrustedNetwork": dbus.MakeVariant(trusted),
 		"Connected":      dbus.MakeVariant(connected),
 		"IP":             dbus.MakeVariant("127.0.0.1"),
 		"Device":         dbus.MakeVariant("vpn-tun0"),
@@ -127,7 +127,7 @@ func buildVPNStatus(connected bool) map[string]dbus.Variant {
 }
 
 func emitVPNSignal(status map[string]dbus.Variant) {
-	if err := vpn.Emit(conn, &vpn.VpnStatusChangeSignal{
+	if err := vpn.Emit(systemConn, &vpn.VpnStatusChangeSignal{
 		Path: V_DBUS_OBJECT_PATH,
 		Body: &vpn.VpnStatusChangeSignalBody{
 			Status: status,
@@ -239,7 +239,7 @@ func main() {
 				Callback: nil,
 			},
 			"Status": {
-				Value:    buildVPNStatus(false),
+				Value:    buildVPNStatus(false, false),
 				Writable: true,
 				Emit:     prop.EmitTrue,
 				Callback: nil,
@@ -261,14 +261,29 @@ func main() {
 	}
 	fmt.Printf("Listening on interface - %v and path %v ...\n", V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH)
 
-	l := false
 	for {
 		time.Sleep(time.Second * 10)
-		status := buildIdentityStatus(l)
-		log.Printf("%v\n", status)
-		iProps.SetMust(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
-		emitIdentitySignal(status)
+		vStatus := buildVPNStatus(false, true)
+		vProps.SetMust(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(vStatus))
+		emitVPNSignal(vStatus)
+		log.Println("VPN connected")
 
-		l = !l
+		time.Sleep(time.Second * 2)
+		iStatus := buildIdentityStatus(true)
+		iProps.SetMust(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(iStatus))
+		emitIdentitySignal(iStatus)
+		log.Println("Identity loggedIn")
+
+		time.Sleep(time.Second * 20)
+		vStatus = buildVPNStatus(false, false)
+		vProps.SetMust(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(vStatus))
+		emitVPNSignal(vStatus)
+		log.Println("VPN disconnected")
+
+		time.Sleep(time.Second * 10)
+		iStatus = buildIdentityStatus(false)
+		iProps.SetMust(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(iStatus))
+		emitIdentitySignal(iStatus)
+		log.Println("Identity loggedOut")
 	}
 }

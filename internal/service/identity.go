@@ -9,8 +9,8 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-const DBUS_SERVICE_NAME = "de.telekomMMS.identity"
-const DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
+const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
+const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
 
 type Identity struct {
 	conn       *dbus.Conn
@@ -28,7 +28,6 @@ func NewIdentityService() *Identity {
 
 func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
 	go func() {
-
 		var sigI *identity.IdentityStatusChangeSignal = nil
 		identity.AddMatchSignal(i.conn, sigI)
 		defer identity.RemoveMatchSignal(i.conn, sigI)
@@ -60,7 +59,7 @@ func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
 }
 
 func (i *Identity) GetStatus() *model.IdentityStatus {
-	obj := identity.NewIdentity(i.conn.Object(DBUS_SERVICE_NAME, DBUS_OBJECT_PATH))
+	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
 		// TODO enhance logging
@@ -71,7 +70,7 @@ func (i *Identity) GetStatus() *model.IdentityStatus {
 }
 
 func (i *Identity) ReLogin() {
-	obj := identity.NewIdentity(i.conn.Object(DBUS_SERVICE_NAME, DBUS_OBJECT_PATH))
+	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	err := obj.ReLogin(context.Background())
 	if err != nil {
 		// TODO enhance logging
