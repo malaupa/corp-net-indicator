@@ -262,7 +262,7 @@ func main() {
 	}
 	fmt.Printf("Listening on interface - %v and path %v ...\n", V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH)
 
-	if true {
+	if false {
 		select {}
 	}
 

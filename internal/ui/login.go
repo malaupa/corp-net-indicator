@@ -34,7 +34,14 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	passwordEntry.SetHAlign(gtk.AlignStart)
 	serverLabel := gtk.NewLabel(l.Sprintf("Server"))
 	serverLabel.SetHAlign(gtk.AlignStart)
-	serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
+	// currently dropdown is buggy, selection is not set in every case
+	// serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
+	serverListEntry := gtk.NewComboBoxText()
+	serverListEntry.SetPopupFixedWidth(true)
+	for _, server := range d.serverList {
+		serverListEntry.AppendText(server)
+	}
+	serverListEntry.SetActive(0)
 
 	grid := gtk.NewGrid()
 	grid.SetColumnSpacing(10)
@@ -56,7 +63,7 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	okBtn.SetSensitive(false)
 	okBtn.AddCSSClass("suggested-action")
 	okBtn.ConnectClicked(func() {
-		result <- &model.Credentials{Password: passwordEntry.Text(), Server: d.serverList[serverListEntry.Selected()]}
+		result <- &model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()}
 		dialog.Close()
 		dialog.Destroy()
 	})
