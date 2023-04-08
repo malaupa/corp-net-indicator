@@ -11,13 +11,8 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-type Credentials struct {
-	Password string
-	Server   string
-}
-
 type StatusWindow struct {
-	ConnectDisconnectClicked chan *Credentials
+	ConnectDisconnectClicked chan *model.Credentials
 	ReLoginClicked           chan bool
 
 	// identity data
@@ -34,10 +29,13 @@ type StatusWindow struct {
 	ipLabel           *gtk.Label
 	deviceLabel       *gtk.Label
 	certExpiresLabel  *gtk.Label
+	loginDialog       *LoginDialog
+
+	connected bool
 }
 
 func NewStatusWindow() *StatusWindow {
-	return &StatusWindow{ConnectDisconnectClicked: make(chan *Credentials), ReLoginClicked: make(chan bool)}
+	return &StatusWindow{ConnectDisconnectClicked: make(chan *model.Credentials), ReLoginClicked: make(chan bool)}
 }
 
 func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, connect bool) {
@@ -56,11 +54,17 @@ func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, connec
 			icon.SetIconSize(gtk.IconSizeLarge)
 			headerBar.PackStart(icon)
 
+			sw.loginDialog = NewLoginDialog(&window.Window, v.ServerList)
+
 			details := sw.buildDetails(i, v)
 
 			window.SetTitlebar(headerBar)
 			window.SetChild(details)
 			window.Show()
+
+			if connect {
+				sw.handleLogin(sw.loginDialog.Open())
+			}
 		})
 
 		if code := app.Run(os.Args); code > 0 {
@@ -96,19 +100,15 @@ func (sw *StatusWindow) VPNUpdate(u *model.VPNStatus) {
 			sw.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
 		}
 		if u.TrustedNetwork {
-			sw.actionBtn.SetCanFocus(false)
-			sw.actionBtn.SetCanTarget(false)
+			sw.actionBtn.SetSensitive(false)
 		} else {
-			sw.actionBtn.SetCanFocus(true)
-			sw.actionBtn.SetCanTarget(true)
+			sw.actionBtn.SetSensitive(true)
 		}
 		if !u.Connected && !u.TrustedNetwork {
 			setStatusIcon(sw.loggedInImg, false)
-			sw.reLoginBtn.SetCanFocus(false)
-			sw.reLoginBtn.SetCanTarget(false)
+			sw.reLoginBtn.SetSensitive(false)
 		} else {
-			sw.reLoginBtn.SetCanFocus(true)
-			sw.reLoginBtn.SetCanTarget(true)
+			sw.reLoginBtn.SetSensitive(true)
 		}
 	})
 }
@@ -156,9 +156,15 @@ func (sw *StatusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
 		sw.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
 	}
 	if vpn.TrustedNetwork {
-		sw.actionBtn.SetCanFocus(false)
-		sw.actionBtn.SetCanTarget(false)
+		sw.actionBtn.SetSensitive(false)
 	}
+	sw.actionBtn.ConnectClicked(func() {
+		if sw.connected {
+
+		} else {
+			sw.handleLogin(sw.loginDialog.Open())
+		}
+	})
 	sw.trustedNetworkImg = buildStatusIcon(vpn.TrustedNetwork)
 	list.Append(addRow(l.Sprintf("Trusted Network"), sw.trustedNetworkImg))
 	sw.connectedImg = buildStatusIcon(vpn.Connected)
@@ -174,10 +180,20 @@ func (sw *StatusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
 	// set correct identity status
 	if !vpn.Connected && !vpn.TrustedNetwork {
 		setStatusIcon(sw.loggedInImg, false)
-		sw.reLoginBtn.SetCanFocus(false)
-		sw.reLoginBtn.SetCanTarget(false)
+		sw.reLoginBtn.SetSensitive(false)
 	}
 	return box
+}
+
+func (sw *StatusWindow) handleLogin(resultChan <-chan *model.Credentials) {
+	go func() {
+		result := <-resultChan
+		if result != nil {
+			log.Println(result)
+		} else {
+			log.Println("Canceled")
+		}
+	}()
 }
 
 func buildStatusIcon(check bool) *gtk.Image {
@@ -214,7 +230,6 @@ func buildListBoxBase(title string) (gtk.Widgetter, *gtk.ListBox) {
 	box.Append(label)
 	frame := gtk.NewFrame("")
 	frame.SetChild(list)
-	// frame.SetCanTarget(false)
 	box.Append(frame)
 	return box, list
 }

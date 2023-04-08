@@ -14,4 +14,10 @@ type VPNStatus struct {
 	Device         string
 	ConnectedAt    int64
 	CertExpiresAt  int64
+	ServerList     []string
+}
+
+type Credentials struct {
+	Password string
+	Server   string
 }

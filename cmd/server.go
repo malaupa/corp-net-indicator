@@ -123,6 +123,7 @@ func buildVPNStatus(trusted, connected bool) map[string]dbus.Variant {
 		"Device":         dbus.MakeVariant("vpn-tun0"),
 		"ConnectedAt":    dbus.MakeVariant(time.Now().Unix()),
 		"CertExpiresAt":  dbus.MakeVariant(time.Now().Unix() + 60*60*24*365),
+		"ServerList":     dbus.MakeVariant([]string{"server1.example.org", "server2.example.org"}),
 	}
 }
 
@@ -260,6 +261,10 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Printf("Listening on interface - %v and path %v ...\n", V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH)
+
+	if true {
+		select {}
+	}
 
 	for {
 		time.Sleep(time.Second * 10)

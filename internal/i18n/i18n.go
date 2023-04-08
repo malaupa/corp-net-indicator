@@ -8,6 +8,7 @@ import (
 	"golang.org/x/text/message"
 )
 
+// TODO use context here...
 var l *message.Printer
 
 // returns printer to translate messages

@@ -1,81 +1,103 @@
 package ui
 
 import (
-	"os"
-
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
-	"github.com/diamondburned/gotk4-adwaita/pkg/adw"
-	"github.com/diamondburned/gotk4/pkg/gio/v2"
+	"de.telekom-mms.corp-net-indicator/internal/model"
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-func OpenConnectWindow() {
-	go func() {
-		app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
-		app.ConnectActivate(func() { openConnectDialog(app) })
-
-		if code := app.Run(os.Args); code > 0 {
-			os.Exit(code)
-		}
-	}()
+type LoginDialog struct {
+	parent     *gtk.Window
+	serverList []string
 }
 
-func openConnectDialog(app *gtk.Application) {
-	// create localizer
+func NewLoginDialog(parent *gtk.Window, serverList []string) *LoginDialog {
+	return &LoginDialog{parent: parent, serverList: serverList}
+}
+
+func (d *LoginDialog) Open() <-chan *model.Credentials {
 	l := i18n.Localizer()
-	// create window
-	window := gtk.NewApplicationWindow(app)
-	passwordInput := gtk.NewPasswordEntry()
-	connectBtn := gtk.NewButtonWithLabel(l.Sprintf("Connect"))
+	const dialogFlags = 0 |
+		gtk.DialogDestroyWithParent |
+		gtk.DialogModal |
+		gtk.DialogUseHeaderBar
+
+	dialog := gtk.NewDialogWithFlags("", d.parent, dialogFlags)
+	dialog.SetResizable(false)
+
+	passwordLabel := gtk.NewLabel(l.Sprintf("Password"))
+	passwordLabel.SetHAlign(gtk.AlignStart)
+	passwordEntry := gtk.NewPasswordEntry()
+	passwordEntry.SetHExpand(false)
+	passwordEntry.SetVExpand(false)
+	passwordEntry.SetHAlign(gtk.AlignStart)
+	serverLabel := gtk.NewLabel(l.Sprintf("Server"))
+	serverLabel.SetHAlign(gtk.AlignStart)
+	serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
+
 	grid := gtk.NewGrid()
-	label := gtk.NewLabel(l.Sprintf("Password"))
-
-	// vpn connect handler
-	handleConnect := func() {
-		// TODO vpn trigger login
-		window.Close()
-	}
-
-	window.SetTitle(l.Sprintf("Connect to VPN"))
-	window.SetResizable(false)
-	// label.SetHAlign(gtk.AlignStart)
-	passwordInput.SetHExpand(false)
-	passwordInput.SetVExpand(false)
-	passwordInput.SetHAlign(gtk.AlignStart)
-	passwordInput.SetVAlign(gtk.AlignCenter)
-	connectBtn.SetHExpand(false)
-	connectBtn.SetVExpand(false)
-	connectBtn.SetHAlign(gtk.AlignStart)
-	connectBtn.SetVAlign(gtk.AlignCenter)
-
-	// popover := gtk.NewPopover()
-	// popErr := gtk.NewLabel(l.Sprintf("Error!"))
-	// popErr.AddCSSClass("error")
-	// popover.SetChild(popErr)
-	// popover.SetParent(grid)
-	// popover.SetHasArrow(false)
-	// popover.SetPosition(gtk.PosTop)
-	toastO := adw.NewToastOverlay()
-	toastO.SetChild(grid)
-	grid.Attach(label, 0, 0, 1, 1)
-	grid.Attach(passwordInput, 0, 1, 1, 1)
-	grid.Attach(connectBtn, 1, 1, 1, 1)
 	grid.SetColumnSpacing(10)
 	grid.SetRowSpacing(10)
 	grid.SetMarginTop(20)
 	grid.SetMarginBottom(20)
 	grid.SetMarginEnd(20)
 	grid.SetMarginStart(20)
-	window.SetChild(toastO)
+	grid.Attach(passwordLabel, 0, 0, 1, 1)
+	grid.Attach(passwordEntry, 1, 0, 1, 1)
+	grid.Attach(serverLabel, 0, 1, 1, 1)
+	grid.Attach(serverListEntry, 1, 1, 1, 1)
 
-	connectBtn.AddCSSClass("suggested-action")
-	connectBtn.ConnectClicked(handleConnect)
-	passwordInput.ConnectActivate(func() {
-		t := adw.NewToast(l.Sprintf("Error!"))
-		t.SetTimeout(5)
-		toastO.AddToast(t)
-		// handleConnect()
+	dialog.SetChild(grid)
+
+	result := make(chan *model.Credentials)
+
+	okBtn := dialog.AddButton(l.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
+	okBtn.SetSensitive(false)
+	okBtn.AddCSSClass("suggested-action")
+	okBtn.ConnectClicked(func() {
+		result <- &model.Credentials{Password: passwordEntry.Text(), Server: d.serverList[serverListEntry.Selected()]}
+		dialog.Close()
+		dialog.Destroy()
 	})
 
-	window.Show()
+	// connect enter in password entry
+	passwordEntry.ConnectActivate(func() {
+		if okBtn.Sensitive() {
+			okBtn.Activate()
+		}
+	})
+	passwordEntry.ConnectChanged(func() {
+		if passwordEntry.Text() == "" {
+			okBtn.SetSensitive(false)
+		} else {
+			okBtn.SetSensitive(true)
+		}
+	})
+
+	ccBtn := dialog.AddButton(l.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
+	ccBtn.ConnectClicked(func() {
+		dialog.Close()
+		dialog.Destroy()
+	})
+
+	// bind esc
+	esc := gtk.NewEventControllerKey()
+	esc.SetName("dialog-escape")
+	esc.ConnectKeyPressed(func(val, code uint, state gdk.ModifierType) bool {
+		switch val {
+		case gdk.KEY_Escape:
+			if ccBtn.Sensitive() {
+				ccBtn.Activate()
+				return true
+			}
+		}
+
+		return false
+	})
+	dialog.AddController(esc)
+
+	dialog.Show()
+
+	return result
 }
