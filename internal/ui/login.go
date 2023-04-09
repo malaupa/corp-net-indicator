@@ -9,6 +9,7 @@ import (
 
 type LoginDialog struct {
 	parent     *gtk.Window
+	dialog     *gtk.Dialog
 	serverList []string
 	isOpen     bool
 }
@@ -25,8 +26,8 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 		gtk.DialogModal |
 		gtk.DialogUseHeaderBar
 
-	dialog := gtk.NewDialogWithFlags("", d.parent, dialogFlags)
-	dialog.SetResizable(false)
+	d.dialog = gtk.NewDialogWithFlags("", d.parent, dialogFlags)
+	d.dialog.SetResizable(false)
 
 	passwordLabel := gtk.NewLabel(l.Sprintf("Password"))
 	passwordLabel.SetHAlign(gtk.AlignStart)
@@ -57,18 +58,16 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	grid.Attach(serverLabel, 0, 1, 1, 1)
 	grid.Attach(serverListEntry, 1, 1, 1, 1)
 
-	dialog.SetChild(grid)
+	d.dialog.SetChild(grid)
 
 	result := make(chan *model.Credentials)
 
-	okBtn := dialog.AddButton(l.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
+	okBtn := d.dialog.AddButton(l.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
 	okBtn.SetSensitive(false)
 	okBtn.AddCSSClass("suggested-action")
 	okBtn.ConnectClicked(func() {
 		result <- &model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()}
-		dialog.Close()
-		dialog.Destroy()
-		d.isOpen = false
+		d.Close()
 	})
 
 	// connect enter in password entry
@@ -85,12 +84,8 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 		}
 	})
 
-	ccBtn := dialog.AddButton(l.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
-	ccBtn.ConnectClicked(func() {
-		dialog.Close()
-		dialog.Destroy()
-		d.isOpen = false
-	})
+	ccBtn := d.dialog.AddButton(l.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
+	ccBtn.ConnectClicked(d.Close)
 
 	// bind esc
 	esc := gtk.NewEventControllerKey()
@@ -106,11 +101,20 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 
 		return false
 	})
-	dialog.AddController(esc)
+	d.dialog.AddController(esc)
 
-	dialog.Show()
+	d.dialog.Show()
 
 	return result
+}
+
+func (d *LoginDialog) Close() {
+	if d.dialog != nil {
+		d.dialog.Close()
+		d.dialog.Destroy()
+		d.dialog = nil
+	}
+	d.isOpen = false
 }
 
 func (d *LoginDialog) IsOpen() bool {

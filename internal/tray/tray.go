@@ -100,7 +100,7 @@ func onExit() {
 
 func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
 	t.loggedIn = identity.LoggedIn
-	if identity.LoggedIn {
+	if identity.LoggedIn && (t.connected || t.trusted) {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
 		if t.connected || t.trusted {

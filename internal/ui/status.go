@@ -37,16 +37,22 @@ type StatusWindow struct {
 	loginDialog       *LoginDialog
 
 	connected bool
+	end       chan bool
 }
 
 func NewStatusWindow() *StatusWindow {
-	return &StatusWindow{ConnectDisconnectClicked: make(chan *model.Credentials), ReLoginClicked: make(chan bool)}
+	return &StatusWindow{
+		ConnectDisconnectClicked: make(chan *model.Credentials),
+		ReLoginClicked:           make(chan bool),
+		end:                      make(chan bool, 1),
+	}
 }
 
 func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, quickConnect bool) {
 	sw.quickConnect = quickConnect
 	if sw.window != nil {
 		sw.Close()
+		<-sw.end
 	}
 	go func() {
 		app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
@@ -75,12 +81,16 @@ func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, quickC
 		if code := app.Run(os.Args); code > 0 {
 			// TODO enhance logging
 			log.Println("Failed to open window")
+			return
 		}
+		sw.end <- true
 	}()
 }
 
 func (sw *StatusWindow) Close() {
+	sw.loginDialog.Close()
 	sw.window.Close()
+	sw.window.Destroy()
 }
 
 func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
@@ -209,7 +219,9 @@ func (sw *StatusWindow) handleAction() {
 		sw.actionBtn.SetSensitive(false)
 		sw.reLoginBtn.SetSensitive(false)
 		go func() {
+			log.Println("start 1")
 			sw.ConnectDisconnectClicked <- nil
+			log.Println("end 1")
 		}()
 	} else {
 		if sw.loginDialog.IsOpen() {
@@ -226,8 +238,6 @@ func (sw *StatusWindow) handleAction() {
 					sw.reLoginBtn.SetSensitive(false)
 				})
 				sw.ConnectDisconnectClicked <- result
-			} else {
-				log.Println("Canceled")
 			}
 		}()
 	}
