@@ -23,7 +23,7 @@ func NewIdentityService() *Identity {
 	if err != nil {
 		panic(err)
 	}
-	return &Identity{conn: conn, statusChan: make(chan *model.IdentityStatus), stop: make(chan bool)}
+	return &Identity{conn: conn, statusChan: make(chan *model.IdentityStatus, 1), stop: make(chan bool)}
 }
 
 func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {

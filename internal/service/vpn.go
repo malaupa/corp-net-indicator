@@ -23,7 +23,7 @@ func NewVPNService() *VPN {
 	if err != nil {
 		panic(err)
 	}
-	return &VPN{conn: conn, statusChan: make(chan *model.VPNStatus), stop: make(chan bool)}
+	return &VPN{conn: conn, statusChan: make(chan *model.VPNStatus, 1), stop: make(chan bool)}
 }
 
 func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {

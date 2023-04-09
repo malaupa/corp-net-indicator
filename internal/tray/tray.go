@@ -1,6 +1,8 @@
 package tray
 
 import (
+	"log"
+
 	"de.telekom-mms.corp-net-indicator/internal/assets"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -15,6 +17,7 @@ type tray struct {
 
 	trusted   bool
 	connected bool
+	loggedIn  bool
 }
 
 // starts tray
@@ -28,6 +31,8 @@ func onReady() {
 	l := i18n.Localizer()
 	// ref holder
 	t := &tray{}
+	// TODO use context to hold state
+	// TODO hold action in progress in state -> load UI in loading state
 
 	// set up menu
 	systray.SetIcon(assets.GetIcon(assets.ShieldOff))
@@ -58,7 +63,9 @@ func onReady() {
 		case <-t.status.ClickedCh:
 			sw.Open(iSer.GetStatus(), vSer.GetStatus(), false)
 		case <-t.trigger.ClickedCh:
+			t.trigger.Disable()
 			if t.connected {
+				sw.Close()
 				vSer.Disconnect()
 			} else {
 				sw.Open(iSer.GetStatus(), vSer.GetStatus(), true)
@@ -76,6 +83,7 @@ func onReady() {
 			iSer.ReLogin()
 		// handle status updates
 		case i := <-iChan:
+			log.Println(i)
 			sw.IdentityUpdate(i)
 			t.UpdateIdentity(i)
 		case v := <-vChan:
@@ -91,10 +99,11 @@ func onExit() {
 }
 
 func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
+	t.loggedIn = identity.LoggedIn
 	if identity.LoggedIn {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
-		if t.connected {
+		if t.connected || t.trusted {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		} else {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
@@ -106,12 +115,15 @@ func (t *tray) UpdateVPN(vpn *model.VPNStatus) {
 	l := i18n.Localizer()
 	t.trusted = vpn.TrustedNetwork
 	t.connected = vpn.Connected
+	t.trigger.Enable()
 	if vpn.Connected {
 		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		t.trigger.SetTitle(l.Sprintf("Disconnect VPN"))
+		t.trigger.SetIcon(assets.GetIcon(assets.Disconnect))
 		t.trigger.Show()
 	} else {
 		t.trigger.SetTitle(l.Sprintf("Connect VPN"))
+		t.trigger.SetIcon(assets.GetIcon(assets.Connect))
 		if vpn.TrustedNetwork {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 			t.trigger.Hide()

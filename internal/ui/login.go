@@ -10,6 +10,7 @@ import (
 type LoginDialog struct {
 	parent     *gtk.Window
 	serverList []string
+	isOpen     bool
 }
 
 func NewLoginDialog(parent *gtk.Window, serverList []string) *LoginDialog {
@@ -17,6 +18,7 @@ func NewLoginDialog(parent *gtk.Window, serverList []string) *LoginDialog {
 }
 
 func (d *LoginDialog) Open() <-chan *model.Credentials {
+	d.isOpen = true
 	l := i18n.Localizer()
 	const dialogFlags = 0 |
 		gtk.DialogDestroyWithParent |
@@ -66,6 +68,7 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 		result <- &model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()}
 		dialog.Close()
 		dialog.Destroy()
+		d.isOpen = false
 	})
 
 	// connect enter in password entry
@@ -86,6 +89,7 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	ccBtn.ConnectClicked(func() {
 		dialog.Close()
 		dialog.Destroy()
+		d.isOpen = false
 	})
 
 	// bind esc
@@ -107,4 +111,8 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	dialog.Show()
 
 	return result
+}
+
+func (d *LoginDialog) IsOpen() bool {
+	return d.isOpen
 }

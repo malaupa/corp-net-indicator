@@ -45,13 +45,20 @@ func (i Identity) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
 
 func (i Identity) ReLogin() *dbus.Error {
 	log.Println("Identity: ReLogin called!")
-	status := buildIdentityStatus(true)
-	err := iProps.Set(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
-	if err != nil {
-		return err
-	}
-	emitIdentitySignal(status)
+	setAndEmitIdentitySignal(3)
 	return nil
+}
+
+func setAndEmitIdentitySignal(sec time.Duration) {
+	go func() {
+		time.Sleep(time.Second * sec)
+		status := buildIdentityStatus(true)
+		err := iProps.Set(I_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
+		if err != nil {
+			log.Println(err)
+		}
+		emitIdentitySignal(status)
+	}()
 }
 
 func emitIdentitySignal(status map[string]dbus.Variant) {
@@ -90,11 +97,15 @@ func (v VPN) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
 
 func (v VPN) Connect(password string, server string) *dbus.Error {
 	log.Printf("VPN: Connect called! Password[%s] Server[%s]\n", password, server)
-	return setAndEmitVPNStatus(false, true)
+	setAndEmitVPNStatus(false, true)
+	setAndEmitIdentitySignal(10)
+	return nil
 }
 
 func (v VPN) Disconnect() *dbus.Error {
-	return setAndEmitVPNStatus(false, false)
+	log.Printf("VPN: Disconnect called!\n")
+	setAndEmitVPNStatus(false, false)
+	return nil
 }
 
 func (v VPN) ListServers() (servers []string, err *dbus.Error) {
@@ -105,14 +116,16 @@ func (v VPN) ListServers() (servers []string, err *dbus.Error) {
 	}, nil
 }
 
-func setAndEmitVPNStatus(trusted, connected bool) *dbus.Error {
-	status := buildVPNStatus(trusted, connected)
-	err := vProps.Set(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
-	if err != nil {
-		return err
-	}
-	emitVPNSignal(status)
-	return nil
+func setAndEmitVPNStatus(trusted, connected bool) {
+	go func() {
+		time.Sleep(time.Second * 5)
+		status := buildVPNStatus(trusted, connected)
+		err := vProps.Set(V_DBUS_SERVICE_NAME, "Status", dbus.MakeVariant(status))
+		if err != nil {
+			log.Println(err)
+		}
+		emitVPNSignal(status)
+	}()
 }
 
 func buildVPNStatus(trusted, connected bool) map[string]dbus.Variant {
@@ -262,7 +275,7 @@ func main() {
 	}
 	fmt.Printf("Listening on interface - %v and path %v ...\n", V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH)
 
-	if false {
+	if true {
 		select {}
 	}
 

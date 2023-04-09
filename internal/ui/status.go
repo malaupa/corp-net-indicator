@@ -12,6 +12,9 @@ import (
 )
 
 type StatusWindow struct {
+	window       *gtk.ApplicationWindow
+	quickConnect bool
+
 	ConnectDisconnectClicked chan *model.Credentials
 	ReLoginClicked           chan bool
 
@@ -20,10 +23,12 @@ type StatusWindow struct {
 	keepAliveAtLabel *gtk.Label
 	krbIssuedAtLabel *gtk.Label
 	reLoginBtn       *gtk.Button
+	reLoginSpinner   *gtk.Spinner
 
 	// vpn data
 	trustedNetworkImg *gtk.Image
 	connectedImg      *gtk.Image
+	actionSpinner     *gtk.Spinner
 	actionBtn         *gtk.Button
 	connectedAtLabel  *gtk.Label
 	ipLabel           *gtk.Label
@@ -38,32 +43,32 @@ func NewStatusWindow() *StatusWindow {
 	return &StatusWindow{ConnectDisconnectClicked: make(chan *model.Credentials), ReLoginClicked: make(chan bool)}
 }
 
-func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, connect bool) {
+func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, quickConnect bool) {
+	sw.quickConnect = quickConnect
+	if sw.window != nil {
+		sw.Close()
+	}
 	go func() {
 		app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 		app.ConnectActivate(func() {
 			l := i18n.Localizer()
 			// create window
-			window := gtk.NewApplicationWindow(app)
-			window.SetTitle(l.Sprintf("Corporate Network Status"))
-			window.SetResizable(false)
+			sw.window = gtk.NewApplicationWindow(app)
+			sw.window.SetTitle(l.Sprintf("Corporate Network Status"))
+			sw.window.SetResizable(false)
 			headerBar := gtk.NewHeaderBar()
 			headerBar.SetShowTitleButtons(true)
-			icon := gtk.NewImageFromIconName("preferences-system-network")
-			icon.SetHAlign(gtk.AlignStart)
-			icon.SetIconSize(gtk.IconSizeLarge)
-			headerBar.PackStart(icon)
 
-			sw.loginDialog = NewLoginDialog(&window.Window, v.ServerList)
+			sw.loginDialog = NewLoginDialog(&sw.window.Window, v.ServerList)
 
 			details := sw.buildDetails(i, v)
 
-			window.SetTitlebar(headerBar)
-			window.SetChild(details)
-			window.Show()
+			sw.window.SetTitlebar(headerBar)
+			sw.window.SetChild(details)
+			sw.window.Show()
 
-			if connect {
-				sw.handleLogin(sw.loginDialog.Open())
+			if sw.quickConnect {
+				sw.handleAction()
 			}
 		})
 
@@ -74,11 +79,16 @@ func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, connec
 	}()
 }
 
+func (sw *StatusWindow) Close() {
+	sw.window.Close()
+}
+
 func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
 	if sw.loggedInImg == nil {
 		return
 	}
 	glib.IdleAdd(func() {
+		sw.reLoginSpinner.Stop()
 		setStatusIcon(sw.loggedInImg, u.LoggedIn)
 		sw.keepAliveAtLabel.SetText(formatDate(u.LastKeepAliveAt))
 		sw.krbIssuedAtLabel.SetText(formatDate(u.KrbIssuedAt))
@@ -86,11 +96,13 @@ func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
 }
 
 func (sw *StatusWindow) VPNUpdate(u *model.VPNStatus) {
+	sw.connected = u.Connected
 	l := i18n.Localizer()
 	if sw.trustedNetworkImg == nil {
 		return
 	}
 	glib.IdleAdd(func() {
+		sw.actionSpinner.Stop()
 		setStatusIcon(sw.trustedNetworkImg, u.TrustedNetwork)
 		setStatusIcon(sw.connectedImg, u.Connected)
 		sw.connectedAtLabel.SetText(formatDate(u.ConnectedAt))
@@ -110,10 +122,14 @@ func (sw *StatusWindow) VPNUpdate(u *model.VPNStatus) {
 		} else {
 			sw.reLoginBtn.SetSensitive(true)
 		}
+		if sw.quickConnect {
+			sw.Close()
+		}
 	})
 }
 
 func (sw *StatusWindow) NotifyError(err error) {
+	sw.actionSpinner.Stop()
 	// TODO handle error
 }
 
@@ -139,8 +155,12 @@ func (sw *StatusWindow) buildIdentity(identity *model.IdentityStatus) gtk.Widget
 	l := i18n.Localizer()
 	box, list := buildListBoxBase("Identity Details")
 	sw.reLoginBtn = gtk.NewButtonWithLabel(l.Sprintf("ReLogin"))
+	sw.reLoginBtn.SetHAlign(gtk.AlignEnd)
+	sw.reLoginBtn.ConnectClicked(sw.handleReLogin)
 	sw.loggedInImg = buildStatusIcon(identity.LoggedIn)
-	list.Append(addRow(l.Sprintf("Logged in"), sw.reLoginBtn, sw.loggedInImg))
+	sw.reLoginSpinner = gtk.NewSpinner()
+	sw.reLoginSpinner.SetHAlign(gtk.AlignEnd)
+	list.Append(addRow(l.Sprintf("Logged in"), sw.reLoginSpinner, sw.reLoginBtn, sw.loggedInImg))
 	sw.keepAliveAtLabel = gtk.NewLabel(formatDate(identity.LastKeepAliveAt))
 	list.Append(addRow(l.Sprintf("Last Refresh"), sw.keepAliveAtLabel))
 	sw.krbIssuedAtLabel = gtk.NewLabel(formatDate(identity.KrbIssuedAt))
@@ -151,24 +171,22 @@ func (sw *StatusWindow) buildIdentity(identity *model.IdentityStatus) gtk.Widget
 func (sw *StatusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
 	l := i18n.Localizer()
 	box, list := buildListBoxBase("VPN Details")
+	sw.connected = vpn.Connected
 	sw.actionBtn = gtk.NewButtonWithLabel(l.Sprintf("Connect VPN"))
+	sw.actionBtn.SetHAlign(gtk.AlignEnd)
 	if vpn.Connected {
 		sw.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
 	}
 	if vpn.TrustedNetwork {
 		sw.actionBtn.SetSensitive(false)
 	}
-	sw.actionBtn.ConnectClicked(func() {
-		if sw.connected {
-
-		} else {
-			sw.handleLogin(sw.loginDialog.Open())
-		}
-	})
+	sw.actionBtn.ConnectClicked(sw.handleAction)
+	sw.actionSpinner = gtk.NewSpinner()
+	sw.actionSpinner.SetHAlign(gtk.AlignEnd)
 	sw.trustedNetworkImg = buildStatusIcon(vpn.TrustedNetwork)
 	list.Append(addRow(l.Sprintf("Trusted Network"), sw.trustedNetworkImg))
 	sw.connectedImg = buildStatusIcon(vpn.Connected)
-	list.Append(addRow(l.Sprintf("Connected"), sw.actionBtn, sw.connectedImg))
+	list.Append(addRow(l.Sprintf("Connected"), sw.actionSpinner, sw.actionBtn, sw.connectedImg))
 	sw.connectedAtLabel = gtk.NewLabel(formatDate(vpn.ConnectedAt))
 	list.Append(addRow(l.Sprintf("Connect at"), sw.connectedAtLabel))
 	sw.ipLabel = gtk.NewLabel(vpn.IP)
@@ -185,14 +203,42 @@ func (sw *StatusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
 	return box
 }
 
-func (sw *StatusWindow) handleLogin(resultChan <-chan *model.Credentials) {
-	go func() {
-		result := <-resultChan
-		if result != nil {
-			log.Println(result)
-		} else {
-			log.Println("Canceled")
+func (sw *StatusWindow) handleAction() {
+	if sw.connected {
+		sw.actionSpinner.Start()
+		sw.actionBtn.SetSensitive(false)
+		sw.reLoginBtn.SetSensitive(false)
+		go func() {
+			sw.ConnectDisconnectClicked <- nil
+		}()
+	} else {
+		if sw.loginDialog.IsOpen() {
+			return
 		}
+		resultChan := sw.loginDialog.Open()
+		go func() {
+			result := <-resultChan
+			if result != nil {
+				log.Println(result)
+				glib.IdleAdd(func() {
+					sw.actionSpinner.Start()
+					sw.actionBtn.SetSensitive(false)
+					sw.reLoginBtn.SetSensitive(false)
+				})
+				sw.ConnectDisconnectClicked <- result
+			} else {
+				log.Println("Canceled")
+			}
+		}()
+	}
+}
+
+func (sw *StatusWindow) handleReLogin() {
+	go func() {
+		glib.IdleAdd(func() {
+			sw.reLoginSpinner.Start()
+		})
+		sw.ReLoginClicked <- true
 	}()
 }
 
@@ -246,5 +292,6 @@ func addRow(labelText string, value ...gtk.Widgetter) *gtk.ListBoxRow {
 	row := gtk.NewListBoxRow()
 	row.SetChild(box)
 	row.SetActivatable(false)
+	row.SetSizeRequest(340, 0)
 	return row
 }
