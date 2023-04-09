@@ -1,6 +1,7 @@
 package tray
 
 import (
+	"context"
 	"log"
 
 	"de.telekom-mms.corp-net-indicator/internal/assets"
@@ -15,25 +16,19 @@ type tray struct {
 	status  *systray.MenuItem
 	trigger *systray.MenuItem
 
-	trusted   bool
-	connected bool
-	loggedIn  bool
+	ctx context.Context
 }
 
 // starts tray
-func Run() {
-	systray.Run(onReady, onExit)
+func New(ctx context.Context) {
+	t := &tray{ctx: context.WithValue(ctx, model.InProgress, 0)}
+	systray.Run(t.onReady, t.onExit)
 }
 
 // init tray
-func onReady() {
+func (t *tray) onReady() {
 	// translations
 	l := i18n.Localizer()
-	// ref holder
-	t := &tray{}
-	// TODO use context to hold state
-	// TODO hold action in progress in state -> load UI in loading state
-
 	// set up menu
 	systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 	t.status = systray.AddMenuItem(l.Sprintf("Status"), l.Sprintf("Show Status"))
@@ -46,7 +41,7 @@ func onReady() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	// update tray
-	t.UpdateVPN(vSer.GetStatus())
+	t.handleVPNStatus(vSer.GetStatus())
 	t.UpdateIdentity(iSer.GetStatus())
 
 	// listen to status changes
@@ -61,17 +56,19 @@ func onReady() {
 		select {
 		// handle tray menu clicks
 		case <-t.status.ClickedCh:
-			sw.Open(iSer.GetStatus(), vSer.GetStatus(), false)
+			sw.Open(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
 		case <-t.trigger.ClickedCh:
 			t.trigger.Disable()
-			if t.connected {
+			if t.ctx.Value(model.Connected).(bool) {
 				sw.Close()
+				t.ctx = model.IncrementProgress(t.ctx)
 				vSer.Disconnect()
 			} else {
-				sw.Open(iSer.GetStatus(), vSer.GetStatus(), true)
+				sw.Open(t.ctx, iSer.GetStatus(), vSer.GetStatus(), true)
 			}
 		// handle window clicks
 		case c := <-sw.ConnectDisconnectClicked:
+			t.ctx = model.IncrementProgress(t.ctx)
 			if c != nil {
 				if err := vSer.Connect(c.Password, c.Server); err != nil {
 					sw.NotifyError(err)
@@ -80,30 +77,40 @@ func onReady() {
 				vSer.Disconnect()
 			}
 		case <-sw.ReLoginClicked:
+			t.ctx = model.IncrementProgress(t.ctx)
 			iSer.ReLogin()
+		case <-sw.WindowClosed:
+			if t.ctx.Value(model.InProgress).(int) == 0 {
+				t.trigger.Enable()
+			}
 		// handle status updates
 		case i := <-iChan:
+			t.ctx = model.DecrementProgress(t.ctx)
 			log.Println(i)
-			sw.IdentityUpdate(i)
 			t.UpdateIdentity(i)
+			sw.IdentityUpdate(t.ctx, i)
 		case v := <-vChan:
-			sw.VPNUpdate(v)
-			t.UpdateVPN(v)
+			t.ctx = model.DecrementProgress(t.ctx)
+			t.handleVPNStatus(v)
+			log.Printf("tray connected: %v", t.ctx.Value(model.Connected))
+			sw.VPNUpdate(t.ctx, v)
 		}
 	}
 }
 
 // destroy tray
-func onExit() {
+func (t *tray) onExit() {
 
 }
 
 func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
-	t.loggedIn = identity.LoggedIn
-	if identity.LoggedIn && (t.connected || t.trusted) {
+	t.ctx = context.WithValue(t.ctx, model.LoggedIn, identity.LoggedIn)
+	trusted := t.ctx.Value(model.Trusted).(bool)
+	connected := t.ctx.Value(model.Connected).(bool)
+	if identity.LoggedIn && (connected || trusted) {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
-		if t.connected || t.trusted {
+		if connected || trusted {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		} else {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
@@ -111,10 +118,10 @@ func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
 	}
 }
 
-func (t *tray) UpdateVPN(vpn *model.VPNStatus) {
+func (t *tray) handleVPNStatus(vpn *model.VPNStatus) {
 	l := i18n.Localizer()
-	t.trusted = vpn.TrustedNetwork
-	t.connected = vpn.Connected
+	t.ctx = context.WithValue(t.ctx, model.Trusted, vpn.TrustedNetwork)
+	t.ctx = context.WithValue(t.ctx, model.Connected, vpn.Connected)
 	t.trigger.Enable()
 	if vpn.Connected {
 		systray.SetIcon(assets.GetIcon(assets.ShieldOn))

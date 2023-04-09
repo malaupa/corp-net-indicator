@@ -1,5 +1,28 @@
 package model
 
+import "context"
+
+type ctxKeys int
+
+const (
+	Trusted ctxKeys = iota
+	Connected
+	LoggedIn
+	InProgress
+)
+
+func IncrementProgress(ctx context.Context) context.Context {
+	return context.WithValue(ctx, InProgress, ctx.Value(InProgress).(int)+1)
+}
+
+func DecrementProgress(ctx context.Context) context.Context {
+	val := ctx.Value(InProgress).(int)
+	if val == 0 {
+		return ctx
+	}
+	return context.WithValue(ctx, InProgress, val-1)
+}
+
 type IdentityStatus struct {
 	TrustedNetwork  bool
 	LoggedIn        bool

@@ -1,10 +1,12 @@
 package main
 
 import (
+	"context"
+
 	"de.telekom-mms.corp-net-indicator/internal/tray"
 )
 
 // entry point
 func main() {
-	tray.Run()
+	tray.New(context.Background())
 }

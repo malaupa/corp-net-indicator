@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"log"
 	"os"
 
@@ -17,6 +18,7 @@ type StatusWindow struct {
 
 	ConnectDisconnectClicked chan *model.Credentials
 	ReLoginClicked           chan bool
+	WindowClosed             chan bool
 
 	// identity data
 	loggedInImg      *gtk.Image
@@ -37,24 +39,26 @@ type StatusWindow struct {
 	loginDialog       *LoginDialog
 
 	connected bool
-	end       chan bool
+	closeChan chan struct{}
 }
 
+// TODO separate handle to open window and really instantiated window
 func NewStatusWindow() *StatusWindow {
 	return &StatusWindow{
 		ConnectDisconnectClicked: make(chan *model.Credentials),
 		ReLoginClicked:           make(chan bool),
-		end:                      make(chan bool, 1),
+		WindowClosed:             make(chan bool),
 	}
 }
 
-func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, quickConnect bool) {
+func (sw *StatusWindow) Open(ctx context.Context, i *model.IdentityStatus, v *model.VPNStatus, quickConnect bool) {
 	sw.quickConnect = quickConnect
 	if sw.window != nil {
 		sw.Close()
-		<-sw.end
+		<-sw.closeChan
 	}
 	go func() {
+		sw.closeChan = make(chan struct{})
 		app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 		app.ConnectActivate(func() {
 			l := i18n.Localizer()
@@ -83,7 +87,8 @@ func (sw *StatusWindow) Open(i *model.IdentityStatus, v *model.VPNStatus, quickC
 			log.Println("Failed to open window")
 			return
 		}
-		sw.end <- true
+		close(sw.closeChan)
+		sw.WindowClosed <- true
 	}()
 }
 
@@ -91,9 +96,10 @@ func (sw *StatusWindow) Close() {
 	sw.loginDialog.Close()
 	sw.window.Close()
 	sw.window.Destroy()
+	sw.window = nil
 }
 
-func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
+func (sw *StatusWindow) IdentityUpdate(ctx context.Context, u *model.IdentityStatus) {
 	if sw.loggedInImg == nil {
 		return
 	}
@@ -105,7 +111,7 @@ func (sw *StatusWindow) IdentityUpdate(u *model.IdentityStatus) {
 	})
 }
 
-func (sw *StatusWindow) VPNUpdate(u *model.VPNStatus) {
+func (sw *StatusWindow) VPNUpdate(ctx context.Context, u *model.VPNStatus) {
 	sw.connected = u.Connected
 	l := i18n.Localizer()
 	if sw.trustedNetworkImg == nil {
