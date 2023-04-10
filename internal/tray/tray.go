@@ -41,59 +41,58 @@ func (t *tray) onReady() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	// update tray
-	t.handleVPNStatus(vSer.GetStatus())
-	t.UpdateIdentity(iSer.GetStatus())
+	t.applyVPNStatus(vSer.GetStatus())
+	t.ApplyIdentityStatus(iSer.GetStatus())
 
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
 	iChan := iSer.ListenToIdentity()
 
 	// init window
-	sw := ui.NewStatusWindow()
+	s := ui.NewStatus()
 
 	// main loop
 	for {
 		select {
 		// handle tray menu clicks
 		case <-t.status.ClickedCh:
-			sw.Open(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
+			s.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
 		case <-t.trigger.ClickedCh:
-			t.trigger.Disable()
 			if t.ctx.Value(model.Connected).(bool) {
-				sw.Close()
+				s.Close()
+				t.trigger.Disable()
 				t.ctx = model.IncrementProgress(t.ctx)
 				vSer.Disconnect()
 			} else {
-				sw.Open(t.ctx, iSer.GetStatus(), vSer.GetStatus(), true)
+				s.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), true)
 			}
 		// handle window clicks
-		case c := <-sw.ConnectDisconnectClicked:
+		case c := <-s.ConnectDisconnectClicked:
+			t.trigger.Disable()
 			t.ctx = model.IncrementProgress(t.ctx)
 			if c != nil {
 				if err := vSer.Connect(c.Password, c.Server); err != nil {
-					sw.NotifyError(err)
+					s.NotifyError(err)
 				}
 			} else {
 				vSer.Disconnect()
+				// TODO handle error
 			}
-		case <-sw.ReLoginClicked:
+		case <-s.ReLoginClicked:
 			t.ctx = model.IncrementProgress(t.ctx)
 			iSer.ReLogin()
-		case <-sw.WindowClosed:
-			if t.ctx.Value(model.InProgress).(int) == 0 {
-				t.trigger.Enable()
-			}
+			// TODO handle error
 		// handle status updates
-		case i := <-iChan:
+		case status := <-iChan:
 			t.ctx = model.DecrementProgress(t.ctx)
-			log.Println(i)
-			t.UpdateIdentity(i)
-			sw.IdentityUpdate(t.ctx, i)
-		case v := <-vChan:
+			log.Println(status)
+			t.ApplyIdentityStatus(status)
+			s.ApplyIdentityStatus(t.ctx, status)
+		case status := <-vChan:
 			t.ctx = model.DecrementProgress(t.ctx)
-			t.handleVPNStatus(v)
-			log.Printf("tray connected: %v", t.ctx.Value(model.Connected))
-			sw.VPNUpdate(t.ctx, v)
+			t.trigger.Enable()
+			t.applyVPNStatus(status)
+			s.ApplyVPNStatus(t.ctx, status)
 		}
 	}
 }
@@ -103,7 +102,7 @@ func (t *tray) onExit() {
 
 }
 
-func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
+func (t *tray) ApplyIdentityStatus(identity *model.IdentityStatus) {
 	t.ctx = context.WithValue(t.ctx, model.LoggedIn, identity.LoggedIn)
 	trusted := t.ctx.Value(model.Trusted).(bool)
 	connected := t.ctx.Value(model.Connected).(bool)
@@ -118,7 +117,7 @@ func (t *tray) UpdateIdentity(identity *model.IdentityStatus) {
 	}
 }
 
-func (t *tray) handleVPNStatus(vpn *model.VPNStatus) {
+func (t *tray) applyVPNStatus(vpn *model.VPNStatus) {
 	l := i18n.Localizer()
 	t.ctx = context.WithValue(t.ctx, model.Trusted, vpn.TrustedNetwork)
 	t.ctx = context.WithValue(t.ctx, model.Connected, vpn.Connected)
