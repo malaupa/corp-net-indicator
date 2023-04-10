@@ -1,4 +1,4 @@
-package ui
+package gtkui
 
 import (
 	"de.telekom-mms.corp-net-indicator/internal/i18n"

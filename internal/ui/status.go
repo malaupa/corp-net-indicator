@@ -4,13 +4,22 @@ import (
 	"context"
 
 	"de.telekom-mms.corp-net-indicator/internal/model"
+	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
 )
+
+type StatusWindow interface {
+	Open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool)
+	Close()
+	ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus)
+	ApplyVPNStatus(ctx context.Context, status *model.VPNStatus)
+	NotifyError(err error)
+}
 
 type Status struct {
 	ConnectDisconnectClicked chan *model.Credentials
 	ReLoginClicked           chan bool
 
-	window    *statusWindow
+	window    StatusWindow
 	closeChan chan struct{}
 }
 
@@ -25,10 +34,10 @@ func (s *Status) OpenWindow(ctx context.Context, iStatus *model.IdentityStatus, 
 	if s.window != nil {
 		s.Close()
 	}
-	s.window = newStatusWindow(s.ConnectDisconnectClicked, s.ReLoginClicked)
+	s.window = gtkui.NewStatusWindow(s.ConnectDisconnectClicked, s.ReLoginClicked)
 	go func() {
 		s.closeChan = make(chan struct{})
-		s.window.open(ctx, iStatus, vStatus, quickConnect)
+		s.window.Open(ctx, iStatus, vStatus, quickConnect)
 		s.window = nil
 		close(s.closeChan)
 	}()
@@ -36,25 +45,25 @@ func (s *Status) OpenWindow(ctx context.Context, iStatus *model.IdentityStatus, 
 
 func (s *Status) Close() {
 	if s.window != nil {
-		s.window.close()
+		s.window.Close()
 		<-s.closeChan
 	}
 }
 
 func (s *Status) NotifyError(err error) {
 	if s.window != nil {
-		go s.window.notifyError(err)
+		go s.window.NotifyError(err)
 	}
 }
 
 func (s *Status) ApplyVPNStatus(ctx context.Context, status *model.VPNStatus) {
 	if s.window != nil {
-		go s.window.applyVPNStatus(ctx, status)
+		go s.window.ApplyVPNStatus(ctx, status)
 	}
 }
 
 func (s *Status) ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
 	if s.window != nil {
-		go s.window.applyIdentityStatus(ctx, status)
+		go s.window.ApplyIdentityStatus(ctx, status)
 	}
 }

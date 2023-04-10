@@ -15,7 +15,6 @@ const V_DBUS_OBJECT_PATH = "/de/telekomMMS/vpn"
 type VPN struct {
 	conn       *dbus.Conn
 	statusChan chan *model.VPNStatus
-	stop       chan bool
 }
 
 func NewVPNService() *VPN {
@@ -23,7 +22,7 @@ func NewVPNService() *VPN {
 	if err != nil {
 		panic(err)
 	}
-	return &VPN{conn: conn, statusChan: make(chan *model.VPNStatus, 1), stop: make(chan bool)}
+	return &VPN{conn: conn, statusChan: make(chan *model.VPNStatus, 1)}
 }
 
 func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
@@ -46,9 +45,6 @@ func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
 
 			if typed, ok := s.(*vpn.VpnStatusChangeSignal); ok {
 				select {
-				case <-v.stop:
-					close(v.statusChan)
-					return
 				case v.statusChan <- MapDbusDictToStruct(typed.Body.Status, &model.VPNStatus{}):
 				default:
 				}
@@ -90,6 +86,5 @@ func (v *VPN) GetStatus() *model.VPNStatus {
 }
 
 func (v *VPN) Close() {
-	v.stop <- true
 	v.conn.Close()
 }

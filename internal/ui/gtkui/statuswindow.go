@@ -1,4 +1,4 @@
-package ui
+package gtkui
 
 import (
 	"context"
@@ -7,6 +7,7 @@ import (
 
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
+	"de.telekom-mms.corp-net-indicator/internal/util"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -20,14 +21,14 @@ type statusWindow struct {
 
 	window *gtk.ApplicationWindow
 
-	// identity data
+	// identity data TODO -> separate struct/file/component
 	loggedInImg      *gtk.Image
 	keepAliveAtLabel *gtk.Label
 	krbIssuedAtLabel *gtk.Label
 	reLoginBtn       *gtk.Button
 	reLoginSpinner   *gtk.Spinner
 
-	// vpn data
+	// vpn data TODO -> separate struct/file/component
 	trustedNetworkImg *gtk.Image
 	connectedImg      *gtk.Image
 	actionSpinner     *gtk.Spinner
@@ -39,11 +40,11 @@ type statusWindow struct {
 	loginDialog       *LoginDialog
 }
 
-func newStatusWindow(vpnActionClicked chan *model.Credentials, reLoginClicked chan bool) *statusWindow {
+func NewStatusWindow(vpnActionClicked chan *model.Credentials, reLoginClicked chan bool) *statusWindow {
 	return &statusWindow{vpnActionClicked: vpnActionClicked, reLoginClicked: reLoginClicked}
 }
 
-func (sw *statusWindow) open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
+func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
 	sw.ctx = context.WithValue(ctx, model.Connected, vStatus.Connected)
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
@@ -60,6 +61,12 @@ func (sw *statusWindow) open(ctx context.Context, iStatus *model.IdentityStatus,
 
 		details := sw.buildDetails(iStatus, vStatus)
 
+		// progress
+		if ctx.Value(model.InProgress).(int) > 0 {
+			sw.actionBtn.SetSensitive(false)
+			sw.reLoginBtn.SetSensitive(false)
+		}
+
 		sw.window.SetTitlebar(headerBar)
 		sw.window.SetChild(details)
 		sw.window.Show()
@@ -75,29 +82,29 @@ func (sw *statusWindow) open(ctx context.Context, iStatus *model.IdentityStatus,
 	}
 }
 
-func (sw *statusWindow) close() {
+func (sw *statusWindow) Close() {
 	sw.loginDialog.Close()
 	sw.window.Close()
 	sw.window.Destroy()
 }
 
-func (sw *statusWindow) applyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
+func (sw *statusWindow) ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
 	glib.IdleAdd(func() {
 		sw.reLoginSpinner.Stop()
 		setStatusIcon(sw.loggedInImg, status.LoggedIn)
-		sw.keepAliveAtLabel.SetText(formatDate(status.LastKeepAliveAt))
-		sw.krbIssuedAtLabel.SetText(formatDate(status.KrbIssuedAt))
+		sw.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
+		sw.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
 	})
 }
 
-func (sw *statusWindow) applyVPNStatus(ctx context.Context, status *model.VPNStatus) {
+func (sw *statusWindow) ApplyVPNStatus(ctx context.Context, status *model.VPNStatus) {
 	sw.ctx = ctx
 	l := i18n.Localizer()
 	glib.IdleAdd(func() {
 		sw.actionSpinner.Stop()
 		setStatusIcon(sw.trustedNetworkImg, status.TrustedNetwork)
 		setStatusIcon(sw.connectedImg, status.Connected)
-		sw.connectedAtLabel.SetText(formatDate(status.ConnectedAt))
+		sw.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
 		if status.Connected {
 			sw.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
 		} else {
@@ -115,12 +122,12 @@ func (sw *statusWindow) applyVPNStatus(ctx context.Context, status *model.VPNSta
 			sw.reLoginBtn.SetSensitive(true)
 		}
 		if sw.quickConnect {
-			sw.close()
+			sw.Close()
 		}
 	})
 }
 
-func (sw *statusWindow) notifyError(err error) {
+func (sw *statusWindow) NotifyError(err error) {
 	sw.actionSpinner.Stop()
 	// TODO handle error
 }
@@ -153,9 +160,9 @@ func (sw *statusWindow) buildIdentity(identity *model.IdentityStatus) gtk.Widget
 	sw.reLoginSpinner = gtk.NewSpinner()
 	sw.reLoginSpinner.SetHAlign(gtk.AlignEnd)
 	list.Append(addRow(l.Sprintf("Logged in"), sw.reLoginSpinner, sw.reLoginBtn, sw.loggedInImg))
-	sw.keepAliveAtLabel = gtk.NewLabel(formatDate(identity.LastKeepAliveAt))
+	sw.keepAliveAtLabel = gtk.NewLabel(util.FormatDate(identity.LastKeepAliveAt))
 	list.Append(addRow(l.Sprintf("Last Refresh"), sw.keepAliveAtLabel))
-	sw.krbIssuedAtLabel = gtk.NewLabel(formatDate(identity.KrbIssuedAt))
+	sw.krbIssuedAtLabel = gtk.NewLabel(util.FormatDate(identity.KrbIssuedAt))
 	list.Append(addRow(l.Sprintf("Kerberos ticket issued"), sw.krbIssuedAtLabel))
 	return box
 }
@@ -178,13 +185,13 @@ func (sw *statusWindow) buildVPN(vpn *model.VPNStatus) gtk.Widgetter {
 	list.Append(addRow(l.Sprintf("Trusted Network"), sw.trustedNetworkImg))
 	sw.connectedImg = buildStatusIcon(vpn.Connected)
 	list.Append(addRow(l.Sprintf("Connected"), sw.actionSpinner, sw.actionBtn, sw.connectedImg))
-	sw.connectedAtLabel = gtk.NewLabel(formatDate(vpn.ConnectedAt))
+	sw.connectedAtLabel = gtk.NewLabel(util.FormatDate(vpn.ConnectedAt))
 	list.Append(addRow(l.Sprintf("Connect at"), sw.connectedAtLabel))
 	sw.ipLabel = gtk.NewLabel(vpn.IP)
 	list.Append(addRow(l.Sprintf("IP"), sw.ipLabel))
 	sw.deviceLabel = gtk.NewLabel(vpn.Device)
 	list.Append(addRow(l.Sprintf("Device"), sw.deviceLabel))
-	sw.certExpiresLabel = gtk.NewLabel(formatDate(vpn.CertExpiresAt))
+	sw.certExpiresLabel = gtk.NewLabel(util.FormatDate(vpn.CertExpiresAt))
 	list.Append(addRow(l.Sprintf("Certificate expires"), sw.certExpiresLabel))
 	// set correct identity status
 	if !vpn.Connected && !vpn.TrustedNetwork {

@@ -8,5 +8,5 @@ import (
 
 // entry point
 func main() {
-	tray.New(context.Background())
+	tray.New(context.Background()).Run()
 }

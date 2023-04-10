@@ -15,7 +15,6 @@ const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
 type Identity struct {
 	conn       *dbus.Conn
 	statusChan chan *model.IdentityStatus
-	stop       chan bool
 }
 
 func NewIdentityService() *Identity {
@@ -23,7 +22,7 @@ func NewIdentityService() *Identity {
 	if err != nil {
 		panic(err)
 	}
-	return &Identity{conn: conn, statusChan: make(chan *model.IdentityStatus, 1), stop: make(chan bool)}
+	return &Identity{conn: conn, statusChan: make(chan *model.IdentityStatus, 1)}
 }
 
 func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
@@ -46,9 +45,6 @@ func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
 
 			if typed, ok := s.(*identity.IdentityStatusChangeSignal); ok {
 				select {
-				case <-i.stop:
-					close(i.statusChan)
-					return
 				case i.statusChan <- MapDbusDictToStruct(typed.Body.Status, &model.IdentityStatus{}):
 				default:
 				}
@@ -79,6 +75,5 @@ func (i *Identity) ReLogin() {
 }
 
 func (i *Identity) Close() {
-	i.stop <- true
 	i.conn.Close()
 }
