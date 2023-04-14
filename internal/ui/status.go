@@ -7,6 +7,7 @@ import (
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
 )
 
+// minimal interface to interact with an ui implementation
 type StatusWindow interface {
 	Open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool)
 	Close()
@@ -15,6 +16,8 @@ type StatusWindow interface {
 	NotifyError(err error)
 }
 
+// holds data channels for updates and a window handle
+// is used to free memory after closing window
 type Status struct {
 	ConnectDisconnectClicked chan *model.Credentials
 	ReLoginClicked           chan bool
@@ -32,7 +35,7 @@ func NewStatus() *Status {
 
 func (s *Status) OpenWindow(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
 	if s.window != nil {
-		s.Close()
+		s.CloseWindow()
 	}
 	s.window = gtkui.NewStatusWindow(s.ConnectDisconnectClicked, s.ReLoginClicked)
 	go func() {
@@ -43,7 +46,7 @@ func (s *Status) OpenWindow(ctx context.Context, iStatus *model.IdentityStatus, 
 	}()
 }
 
-func (s *Status) Close() {
+func (s *Status) CloseWindow() {
 	if s.window != nil {
 		s.window.Close()
 		<-s.closeChan

@@ -70,7 +70,7 @@ func (t *tray) Run() {
 			t.status.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
 		case <-t.actionItem.ClickedCh:
 			if t.ctx.Value(model.Connected).(bool) {
-				t.status.Close()
+				t.status.CloseWindow()
 				t.actionItem.Disable()
 				t.ctx = model.IncrementProgress(t.ctx)
 				vSer.Disconnect()
@@ -102,7 +102,7 @@ func (t *tray) Run() {
 			t.actionItem.Enable()
 			t.applyVPNStatus(status)
 		case <-c:
-			t.status.Close()
+			t.status.CloseWindow()
 			vSer.Close()
 			iSer.Close()
 			t.quitSystray()

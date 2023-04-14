@@ -1,4 +1,4 @@
-package gtkui
+package cmp
 
 import (
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
@@ -7,19 +7,17 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
-type LoginDialog struct {
+type loginDialog struct {
 	parent     *gtk.Window
 	dialog     *gtk.Dialog
 	serverList []string
-	isOpen     bool
 }
 
-func NewLoginDialog(parent *gtk.Window, serverList []string) *LoginDialog {
-	return &LoginDialog{parent: parent, serverList: serverList}
+func newLoginDialog(parent *gtk.Window, serverList []string) *loginDialog {
+	return &loginDialog{parent: parent, serverList: serverList}
 }
 
-func (d *LoginDialog) Open() <-chan *model.Credentials {
-	d.isOpen = true
+func (d *loginDialog) open() <-chan *model.Credentials {
 	l := i18n.Localizer()
 	const dialogFlags = 0 |
 		gtk.DialogDestroyWithParent |
@@ -67,7 +65,7 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	okBtn.AddCSSClass("suggested-action")
 	okBtn.ConnectClicked(func() {
 		result <- &model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()}
-		d.Close()
+		d.close()
 	})
 
 	// connect enter in password entry
@@ -85,7 +83,7 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	})
 
 	ccBtn := d.dialog.AddButton(l.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
-	ccBtn.ConnectClicked(d.Close)
+	ccBtn.ConnectClicked(d.close)
 
 	// bind esc
 	esc := gtk.NewEventControllerKey()
@@ -108,15 +106,10 @@ func (d *LoginDialog) Open() <-chan *model.Credentials {
 	return result
 }
 
-func (d *LoginDialog) Close() {
+func (d *loginDialog) close() {
 	if d.dialog != nil {
 		d.dialog.Close()
 		d.dialog.Destroy()
 		d.dialog = nil
 	}
-	d.isOpen = false
-}
-
-func (d *LoginDialog) IsOpen() bool {
-	return d.isOpen
 }
