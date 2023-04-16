@@ -1,7 +1,6 @@
 package tray
 
 import (
-	"context"
 	"log"
 	"os"
 	"os/exec"
@@ -15,19 +14,20 @@ import (
 )
 
 type tray struct {
+	ctx *model.Context
+
 	statusItem   *systray.MenuItem
 	actionItem   *systray.MenuItem
 	startSystray func()
 	quitSystray  func()
 
-	ctx context.Context
-
-	window *os.Process
+	window    *os.Process
+	closeChan chan struct{}
 }
 
 // starts tray
-func New(ctx context.Context) *tray {
-	t := &tray{ctx: ctx}
+func New() *tray {
+	t := &tray{ctx: model.NewContext()}
 	// create tray
 	t.startSystray, t.quitSystray = systray.RunWithExternalLoop(t.onReady, func() {})
 	return t
@@ -60,12 +60,17 @@ func (t *tray) OpenWindow(quickConnect bool) {
 		cmd = exec.Command(self)
 	}
 
+	t.closeChan = make(chan struct{})
 	err = cmd.Start()
+	go func() {
+		cmd.Process.Wait()
+		t.window = nil
+		close(t.closeChan)
+	}()
 	if err != nil {
 		log.Println(err)
 	}
 	t.window = cmd.Process
-	// TODO detach -> zombie present
 }
 
 func (t *tray) closeWindow() {
@@ -78,7 +83,7 @@ func (t *tray) closeWindow() {
 				log.Println(err)
 			}
 		}
-		t.window.Wait()
+		<-t.closeChan
 	}
 }
 
@@ -89,8 +94,16 @@ func (t *tray) Run() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	// update tray
-	t.applyVPNStatus(vSer.GetStatus())
-	t.applyIdentityStatus(iSer.GetStatus())
+	vStatus := vSer.GetStatus()
+	iStatus := iSer.GetStatus()
+	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = vStatus.InProgress
+		ctx.IdentityInProgress = iStatus.InProgress
+		ctx.TrustedNetwork = vStatus.TrustedNetwork
+		ctx.Connected = vStatus.Connected
+		ctx.LoggedIn = iStatus.LoggedIn
+	})
+	t.apply(ctx)
 
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
@@ -106,7 +119,7 @@ func (t *tray) Run() {
 		case <-t.statusItem.ClickedCh:
 			t.OpenWindow(false)
 		case <-t.actionItem.ClickedCh:
-			if t.ctx.Value(model.Connected).(bool) {
+			if t.ctx.Read().Connected {
 				t.actionItem.Disable()
 				vSer.Disconnect()
 			} else {
@@ -114,9 +127,18 @@ func (t *tray) Run() {
 			}
 		// handle status updates
 		case status := <-iChan:
-			t.applyIdentityStatus(status)
+			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+				ctx.IdentityInProgress = status.InProgress
+				ctx.LoggedIn = status.LoggedIn
+			})
+			t.apply(ctx)
 		case status := <-vChan:
-			t.applyVPNStatus(status)
+			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+				ctx.VPNInProgress = status.InProgress
+				ctx.TrustedNetwork = status.TrustedNetwork
+				ctx.Connected = status.Connected
+			})
+			t.apply(ctx)
 		case <-c:
 			t.closeWindow()
 			vSer.Close()
@@ -127,41 +149,34 @@ func (t *tray) Run() {
 	}
 }
 
-func (t *tray) applyIdentityStatus(status *model.IdentityStatus) {
-	t.ctx = context.WithValue(t.ctx, model.LoggedIn, status.LoggedIn)
-	trusted := t.ctx.Value(model.Trusted).(bool)
-	connected := t.ctx.Value(model.Connected).(bool)
-	if status.LoggedIn && (connected || trusted) {
+func (t *tray) apply(ctx model.ContextValues) {
+	l := i18n.Localizer()
+	// icon
+	if ctx.LoggedIn && (ctx.Connected || ctx.TrustedNetwork) {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
-		if connected || trusted {
+		if ctx.Connected || ctx.TrustedNetwork {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		} else {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 		}
 	}
-}
-
-func (t *tray) applyVPNStatus(status *model.VPNStatus) {
-	l := i18n.Localizer()
-	t.ctx = context.WithValue(t.ctx, model.Trusted, status.TrustedNetwork)
-	t.ctx = context.WithValue(t.ctx, model.Connected, status.Connected)
-	if !status.InProgress {
+	// action menu item
+	if ctx.VPNInProgress {
+		t.actionItem.Disable()
+	} else {
 		t.actionItem.Enable()
 	}
-	if status.Connected {
-		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+	if ctx.Connected {
 		t.actionItem.SetTitle(l.Sprintf("Disconnect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Disconnect))
 		t.actionItem.Show()
 	} else {
 		t.actionItem.SetTitle(l.Sprintf("Connect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Connect))
-		if status.TrustedNetwork {
-			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+		if ctx.TrustedNetwork {
 			t.actionItem.Hide()
 		} else {
-			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 			t.actionItem.Show()
 		}
 	}

@@ -1,14 +1,39 @@
 package model
 
-type ctxKeys int
-
-const (
-	Trusted ctxKeys = iota
-	Connected
-	LoggedIn
-	IdentityInProgress
-	VPNInProgress
+import (
+	"sync"
 )
+
+type ContextValues struct {
+	TrustedNetwork     bool
+	Connected          bool
+	LoggedIn           bool
+	IdentityInProgress bool
+	VPNInProgress      bool
+}
+
+type Context struct {
+	lock sync.RWMutex
+
+	values ContextValues
+}
+
+func NewContext() *Context {
+	return &Context{lock: sync.RWMutex{}, values: ContextValues{}}
+}
+
+func (c *Context) Write(writer func(ctx *ContextValues)) ContextValues {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	writer(&c.values)
+	return c.values
+}
+
+func (c *Context) Read() ContextValues {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.values
+}
 
 type IdentityStatus struct {
 	TrustedNetwork  bool

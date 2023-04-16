@@ -1,8 +1,6 @@
 package cmp
 
 import (
-	"context"
-
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/util"
@@ -12,8 +10,8 @@ import (
 
 type IdentityDetails struct {
 	detail
+	ctx *model.Context
 
-	ctx            context.Context
 	reLoginClicked chan bool
 
 	loggedInImg      *statusIcon
@@ -23,7 +21,7 @@ type IdentityDetails struct {
 	reLoginSpinner   *gtk.Spinner
 }
 
-func NewIdentityDetails(ctx context.Context, reLoginClicked chan bool, status *model.IdentityStatus) *IdentityDetails {
+func NewIdentityDetails(ctx *model.Context, reLoginClicked chan bool, status *model.IdentityStatus) *IdentityDetails {
 	id := &IdentityDetails{detail: *newDetail(), ctx: ctx, reLoginClicked: reLoginClicked}
 
 	l := i18n.Localizer()
@@ -45,18 +43,19 @@ func NewIdentityDetails(ctx context.Context, reLoginClicked chan bool, status *m
 	return id
 }
 
-func (id *IdentityDetails) Apply(ctx context.Context, status *model.IdentityStatus) {
-	id.ctx = ctx
+func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 	glib.IdleAdd(func() {
-		if ctx.Value(model.IdentityInProgress).(bool) || ctx.Value(model.VPNInProgress).(bool) {
-			id.reLoginSpinner.Start()
+		ctx := id.ctx.Read()
+		if ctx.IdentityInProgress || ctx.VPNInProgress {
+			if ctx.IdentityInProgress {
+				id.reLoginSpinner.Start()
+			}
 			id.reLoginBtn.SetSensitive(false)
 			return
 		}
-		id.reLoginSpinner.Stop()
-		// TODO look at connected and trusted network ctx vars
-		id.reLoginBtn.SetSensitive(true)
 		id.loggedInImg.setStatus(status.LoggedIn)
+		id.setReLoginBtn(status.LoggedIn)
+		id.setButtonAndLoginState()
 		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
 		id.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
 	})
@@ -74,8 +73,15 @@ func (id *IdentityDetails) onReLoginClicked() {
 
 func (id *IdentityDetails) setReLoginBtn(status bool) {
 	id.reLoginBtn.SetSensitive(status)
+	id.reLoginSpinner.Stop()
 }
 
-func (id *IdentityDetails) setLoggedOut() {
-	id.loggedInImg.setStatus(false)
+func (id *IdentityDetails) setButtonAndLoginState() {
+	ctx := id.ctx.Read()
+	if !ctx.Connected && !ctx.TrustedNetwork {
+		id.loggedInImg.setStatus(false)
+		id.setReLoginBtn(false)
+	} else if !ctx.IdentityInProgress {
+		id.setReLoginBtn(true)
+	}
 }

@@ -1,7 +1,6 @@
 package gtkui
 
 import (
-	"context"
 	"log"
 
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
@@ -12,7 +11,7 @@ import (
 )
 
 type statusWindow struct {
-	ctx              context.Context
+	ctx              *model.Context
 	quickConnect     bool
 	vpnActionClicked chan *model.Credentials
 	reLoginClicked   chan bool
@@ -23,23 +22,16 @@ type statusWindow struct {
 	vpnDetail      *cmp.VPNDetail
 }
 
-func NewStatusWindow(vpnActionClicked chan *model.Credentials, reLoginClicked chan bool) *statusWindow {
-	return &statusWindow{vpnActionClicked: vpnActionClicked, reLoginClicked: reLoginClicked}
+func NewStatusWindow(ctx *model.Context, vpnActionClicked chan *model.Credentials, reLoginClicked chan bool) *statusWindow {
+	return &statusWindow{vpnActionClicked: vpnActionClicked, reLoginClicked: reLoginClicked, ctx: ctx}
 }
 
-func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
-	sw.ctx = context.WithValue(ctx, model.Connected, vStatus.Connected)
+func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
 		l := i18n.Localizer()
 		sw.window = gtk.NewApplicationWindow(app)
-		// sw.window.ConnectCloseRequest(func() (ok bool) {
-		// 	sw.Close()
-		// 	app.Quit()
-		// 	log.Println("quit")
-		// 	return true
-		// })
 		sw.window.SetTitle(l.Sprintf("Corporate Network Status"))
 		sw.window.SetResizable(false)
 
@@ -73,18 +65,18 @@ func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus,
 	}
 }
 
-func (sw *statusWindow) ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
+func (sw *statusWindow) ApplyIdentityStatus(status *model.IdentityStatus) {
 	if sw.window == nil {
 		return
 	}
-	sw.identityDetail.Apply(ctx, status)
+	sw.identityDetail.Apply(status)
 }
 
-func (sw *statusWindow) ApplyVPNStatus(ctx context.Context, status *model.VPNStatus) {
+func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
 	if sw.window == nil {
 		return
 	}
-	sw.vpnDetail.Apply(ctx, status, func() {
+	sw.vpnDetail.Apply(status, func() {
 		if sw.quickConnect {
 			sw.Close()
 		}

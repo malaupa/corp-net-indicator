@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"flag"
 
 	"de.telekom-mms.corp-net-indicator/internal/tray"
@@ -21,8 +20,8 @@ func main() {
 	flag.Parse()
 
 	if runAsTray {
-		tray.New(context.Background()).Run()
+		tray.New().Run()
 	} else {
-		ui.NewStatus(context.Background()).Run(quickConnect)
+		ui.NewStatus().Run(quickConnect)
 	}
 }
