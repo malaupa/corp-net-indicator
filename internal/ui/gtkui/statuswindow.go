@@ -3,7 +3,6 @@ package gtkui
 import (
 	"context"
 	"log"
-	"os"
 
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -68,7 +67,7 @@ func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus,
 		}
 	})
 
-	if code := app.Run(os.Args); code > 0 {
+	if code := app.Run([]string{}); code > 0 {
 		// TODO enhance logging
 		log.Println("Failed to open window")
 	}
