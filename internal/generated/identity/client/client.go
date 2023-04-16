@@ -22,9 +22,7 @@ var (
 			{Name: "status", Type: "a{sv}", Direction: "out"},
 		}},
 		},
-		Properties: []introspect.Property{{Name: "Version", Type: "u", Access: "read"},
-			{Name: "Status", Type: "a{sv}", Access: "read"},
-		},
+		Properties:  []introspect.Property{},
 		Annotations: []introspect.Annotation{},
 	}
 )
@@ -104,12 +102,6 @@ func (o *Identity) GetStatus(ctx context.Context) (status map[string]dbus.Varian
 // ReLogin calls de.telekomMMS.identity.ReLogin method.
 func (o *Identity) ReLogin(ctx context.Context) (err error) {
 	err = o.object.CallWithContext(ctx, InterfaceIdentity+".ReLogin", 0).Store()
-	return
-}
-
-// GetVersion gets de.telekomMMS.identity.Version property.
-func (o *Identity) GetVersion(ctx context.Context) (version uint32, err error) {
-	err = o.object.CallWithContext(ctx, "org.freedesktop.DBus.Properties.Get", 0, InterfaceIdentity, "Version").Store(&version)
 	return
 }
 

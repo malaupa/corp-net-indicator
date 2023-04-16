@@ -48,7 +48,14 @@ func NewIdentityDetails(ctx context.Context, reLoginClicked chan bool, status *m
 func (id *IdentityDetails) Apply(ctx context.Context, status *model.IdentityStatus) {
 	id.ctx = ctx
 	glib.IdleAdd(func() {
+		if ctx.Value(model.IdentityInProgress).(bool) || ctx.Value(model.VPNInProgress).(bool) {
+			id.reLoginSpinner.Start()
+			id.reLoginBtn.SetSensitive(false)
+			return
+		}
 		id.reLoginSpinner.Stop()
+		// TODO look at connected and trusted network ctx vars
+		id.reLoginBtn.SetSensitive(true)
 		id.loggedInImg.setStatus(status.LoggedIn)
 		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
 		id.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
@@ -59,6 +66,7 @@ func (id *IdentityDetails) onReLoginClicked() {
 	go func() {
 		glib.IdleAdd(func() {
 			id.reLoginSpinner.Start()
+			id.reLoginBtn.SetSensitive(false)
 		})
 		id.reLoginClicked <- true
 	}()

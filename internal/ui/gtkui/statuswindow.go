@@ -53,8 +53,8 @@ func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus,
 		details.SetMarginStart(60)
 		details.SetMarginEnd(60)
 
-		sw.identityDetail = cmp.NewIdentityDetails(ctx, sw.reLoginClicked, iStatus)
-		sw.vpnDetail = cmp.NewVPNDetail(ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, sw.identityDetail)
+		sw.identityDetail = cmp.NewIdentityDetails(sw.ctx, sw.reLoginClicked, iStatus)
+		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, sw.identityDetail)
 
 		details.Append(sw.identityDetail)
 		details.Append(sw.vpnDetail)
@@ -74,10 +74,16 @@ func (sw *statusWindow) Open(ctx context.Context, iStatus *model.IdentityStatus,
 }
 
 func (sw *statusWindow) ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
+	if sw.window == nil {
+		return
+	}
 	sw.identityDetail.Apply(ctx, status)
 }
 
 func (sw *statusWindow) ApplyVPNStatus(ctx context.Context, status *model.VPNStatus) {
+	if sw.window == nil {
+		return
+	}
 	sw.vpnDetail.Apply(ctx, status, func() {
 		if sw.quickConnect {
 			sw.Close()
@@ -86,12 +92,18 @@ func (sw *statusWindow) ApplyVPNStatus(ctx context.Context, status *model.VPNSta
 }
 
 func (sw *statusWindow) Close() {
+	if sw.window == nil {
+		return
+	}
 	sw.vpnDetail.Close()
 	sw.window.Close()
 	sw.window.Destroy()
 }
 
 func (sw *statusWindow) NotifyError(err error) {
+	if sw.window == nil {
+		return
+	}
 	// sw.actionSpinner.Stop()
 	// TODO handle error
 }

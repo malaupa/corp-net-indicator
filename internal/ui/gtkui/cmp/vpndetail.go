@@ -68,7 +68,7 @@ func NewVPNDetail(ctx context.Context, vpnActionClicked chan *model.Credentials,
 		vd.identityDetail.setReLoginBtn(false)
 	}
 	// progress
-	if ctx.Value(model.InProgress).(int) > 0 {
+	if ctx.Value(model.IdentityInProgress).(bool) || ctx.Value(model.VPNInProgress).(bool) {
 		vd.actionBtn.SetSensitive(false)
 		vd.identityDetail.setReLoginBtn(false)
 	}
@@ -79,6 +79,12 @@ func (vd *VPNDetail) Apply(ctx context.Context, status *model.VPNStatus, afterAp
 	vd.ctx = ctx
 	l := i18n.Localizer()
 	glib.IdleAdd(func() {
+		if ctx.Value(model.IdentityInProgress).(bool) || ctx.Value(model.VPNInProgress).(bool) {
+			vd.actionSpinner.Start()
+			vd.actionBtn.SetSensitive(false)
+			vd.identityDetail.setReLoginBtn(false)
+			return
+		}
 		vd.actionSpinner.Stop()
 		vd.trustedNetworkImg.setStatus(status.TrustedNetwork)
 		vd.connectedImg.setStatus(status.Connected)

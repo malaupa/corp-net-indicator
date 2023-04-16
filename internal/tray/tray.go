@@ -2,31 +2,32 @@ package tray
 
 import (
 	"context"
+	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 
 	"de.telekom-mms.corp-net-indicator/internal/assets"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/ui"
 	"github.com/slytomcat/systray"
 )
 
 type tray struct {
-	status *ui.Status
-
 	statusItem   *systray.MenuItem
 	actionItem   *systray.MenuItem
 	startSystray func()
 	quitSystray  func()
 
 	ctx context.Context
+
+	window *os.Process
 }
 
 // starts tray
 func New(ctx context.Context) *tray {
-	t := &tray{ctx: context.WithValue(ctx, model.InProgress, 0), status: ui.NewStatus()}
+	t := &tray{ctx: ctx}
 	// create tray
 	t.startSystray, t.quitSystray = systray.RunWithExternalLoop(t.onReady, func() {})
 	return t
@@ -43,6 +44,42 @@ func (t *tray) onReady() {
 	t.actionItem = systray.AddMenuItem(l.Sprintf("Connect VPN"), l.Sprintf("Connect to VPN"))
 	t.actionItem.SetIcon(assets.GetIcon(assets.Connect))
 	t.actionItem.Hide()
+}
+
+func (t *tray) OpenWindow(quickConnect bool) {
+	t.closeWindow()
+	self, err := os.Executable()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var cmd *exec.Cmd
+	if quickConnect {
+		cmd = exec.Command(self, "-quick")
+	} else {
+		cmd = exec.Command(self)
+	}
+
+	err = cmd.Start()
+	if err != nil {
+		log.Println(err)
+	}
+	t.window = cmd.Process
+	// TODO detach -> zombie present
+}
+
+func (t *tray) closeWindow() {
+	if t.window != nil {
+		err := t.window.Signal(os.Interrupt)
+		if err != nil {
+			log.Println(err)
+			err = t.window.Kill()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		t.window.Wait()
+	}
 }
 
 func (t *tray) Run() {
@@ -67,42 +104,21 @@ func (t *tray) Run() {
 		select {
 		// handle tray menu clicks
 		case <-t.statusItem.ClickedCh:
-			t.status.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
+			t.OpenWindow(false)
 		case <-t.actionItem.ClickedCh:
 			if t.ctx.Value(model.Connected).(bool) {
-				t.status.CloseWindow()
 				t.actionItem.Disable()
-				t.ctx = model.IncrementProgress(t.ctx)
 				vSer.Disconnect()
 			} else {
-				t.status.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), true)
+				t.OpenWindow(true)
 			}
-		// handle window clicks
-		case c := <-t.status.ConnectDisconnectClicked:
-			t.actionItem.Disable()
-			t.ctx = model.IncrementProgress(t.ctx)
-			if c != nil {
-				if err := vSer.Connect(c.Password, c.Server); err != nil {
-					t.status.NotifyError(err)
-				}
-			} else {
-				vSer.Disconnect()
-				// TODO handle error
-			}
-		case <-t.status.ReLoginClicked:
-			t.ctx = model.IncrementProgress(t.ctx)
-			iSer.ReLogin()
-			// TODO handle error
 		// handle status updates
 		case status := <-iChan:
-			t.ctx = model.DecrementProgress(t.ctx)
 			t.applyIdentityStatus(status)
 		case status := <-vChan:
-			t.ctx = model.DecrementProgress(t.ctx)
-			t.actionItem.Enable()
 			t.applyVPNStatus(status)
 		case <-c:
-			t.status.CloseWindow()
+			t.closeWindow()
 			vSer.Close()
 			iSer.Close()
 			t.quitSystray()
@@ -113,7 +129,6 @@ func (t *tray) Run() {
 
 func (t *tray) applyIdentityStatus(status *model.IdentityStatus) {
 	t.ctx = context.WithValue(t.ctx, model.LoggedIn, status.LoggedIn)
-	t.status.ApplyIdentityStatus(t.ctx, status)
 	trusted := t.ctx.Value(model.Trusted).(bool)
 	connected := t.ctx.Value(model.Connected).(bool)
 	if status.LoggedIn && (connected || trusted) {
@@ -131,8 +146,9 @@ func (t *tray) applyVPNStatus(status *model.VPNStatus) {
 	l := i18n.Localizer()
 	t.ctx = context.WithValue(t.ctx, model.Trusted, status.TrustedNetwork)
 	t.ctx = context.WithValue(t.ctx, model.Connected, status.Connected)
-	t.status.ApplyVPNStatus(t.ctx, status)
-	t.actionItem.Enable()
+	if !status.InProgress {
+		t.actionItem.Enable()
+	}
 	if status.Connected {
 		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		t.actionItem.SetTitle(l.Sprintf("Disconnect VPN"))
