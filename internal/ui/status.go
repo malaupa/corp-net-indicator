@@ -8,7 +8,7 @@ import (
 
 // minimal interface to interact with an ui implementation
 type StatusWindow interface {
-	Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool)
+	Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool)
 	Close()
 	ApplyIdentityStatus(status *model.IdentityStatus)
 	ApplyVPNStatus(status *model.VPNStatus)
@@ -102,6 +102,6 @@ func (s *Status) Run(quickConnect bool) {
 		ctx.LoggedIn = iStatus.LoggedIn
 	})
 	// open window
-	s.window.Open(iStatus, vStatus, quickConnect)
+	s.window.Open(iStatus, vStatus, vSer.GetServerList(), quickConnect)
 	close(c)
 }

@@ -28,11 +28,17 @@ type VPNDetail struct {
 	identityDetail *IdentityDetails
 }
 
-func NewVPNDetail(context *model.Context, vpnActionClicked chan *model.Credentials, parent *gtk.Window, status *model.VPNStatus, identityDetail *IdentityDetails) *VPNDetail {
+func NewVPNDetail(
+	context *model.Context,
+	vpnActionClicked chan *model.Credentials,
+	parent *gtk.Window,
+	status *model.VPNStatus,
+	servers []string,
+	identityDetail *IdentityDetails) *VPNDetail {
 	vd := &VPNDetail{detail: *newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
 	l := i18n.Localizer()
 
-	vd.loginDialog = newLoginDialog(parent, status.ServerList)
+	vd.loginDialog = newLoginDialog(parent, servers)
 
 	vd.actionBtn = gtk.NewButtonWithLabel(l.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)

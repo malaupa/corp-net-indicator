@@ -103,6 +103,7 @@ type VPN struct {
 }
 
 func (v VPN) GetStatus() (map[string]dbus.Variant, *dbus.Error) {
+	log.Printf("VPN: GetStatus called!\n")
 	return vS.getState(), nil
 }
 
@@ -131,6 +132,7 @@ func (v VPN) Disconnect() *dbus.Error {
 }
 
 func (v VPN) ListServers() (servers []string, err *dbus.Error) {
+	log.Printf("VPN: ListServers called!\n")
 	return []string{
 		"server1.example.com",
 		"server2.example.com",

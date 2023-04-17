@@ -26,7 +26,7 @@ func NewStatusWindow(ctx *model.Context, vpnActionClicked chan *model.Credential
 	return &statusWindow{vpnActionClicked: vpnActionClicked, reLoginClicked: reLoginClicked, ctx: ctx}
 }
 
-func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
+func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool) {
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
@@ -46,7 +46,7 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		details.SetMarginEnd(60)
 
 		sw.identityDetail = cmp.NewIdentityDetails(sw.ctx, sw.reLoginClicked, iStatus)
-		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, sw.identityDetail)
+		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, servers, sw.identityDetail)
 
 		details.Append(sw.identityDetail)
 		details.Append(sw.vpnDetail)

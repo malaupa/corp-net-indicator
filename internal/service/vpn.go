@@ -85,6 +85,17 @@ func (v *VPN) GetStatus() *model.VPNStatus {
 	return MapDbusDictToStruct(status, &model.VPNStatus{})
 }
 
+func (v *VPN) GetServerList() []string {
+	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
+	servers, err := obj.ListServers(context.Background())
+	if err != nil {
+		// TODO enhance logging
+		log.Println(err)
+	}
+
+	return servers
+}
+
 func (v *VPN) Close() {
 	v.conn.Close()
 }
