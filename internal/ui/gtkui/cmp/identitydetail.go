@@ -40,6 +40,11 @@ func NewIdentityDetails(ctx *model.Context, reLoginClicked chan bool, status *mo
 		addRow(l.Sprintf("Last Refresh"), id.keepAliveAtLabel).
 		addRow(l.Sprintf("Kerberos ticket issued"), id.krbIssuedAtLabel)
 
+	if ctx.Read().IdentityInProgress {
+		id.reLoginSpinner.Start()
+		id.reLoginBtn.SetSensitive(false)
+	}
+
 	return id
 }
 
@@ -54,10 +59,10 @@ func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 			return
 		}
 		id.loggedInImg.setStatus(status.LoggedIn)
-		id.setReLoginBtn(status.LoggedIn)
-		id.setButtonAndLoginState()
 		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
 		id.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
+		id.setReLoginBtn(status.LoggedIn)
+		id.setButtonAndLoginState()
 	})
 }
 

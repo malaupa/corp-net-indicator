@@ -6,6 +6,7 @@ import (
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
+	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
@@ -96,6 +97,7 @@ func (sw *statusWindow) NotifyError(err error) {
 	if sw.window == nil {
 		return
 	}
-	// sw.actionSpinner.Stop()
-	// TODO handle error
+	glib.IdleAdd(func() {
+		sw.vpnDetail.SetButtonsAfterProgress()
+	})
 }

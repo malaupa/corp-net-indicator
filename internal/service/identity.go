@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 
 	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/client"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -54,24 +53,19 @@ func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
 	return i.statusChan
 }
 
-func (i *Identity) GetStatus() *model.IdentityStatus {
+func (i *Identity) GetStatus() (*model.IdentityStatus, error) {
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
+		return nil, err
 	}
 
-	return MapDbusDictToStruct(status, &model.IdentityStatus{})
+	return MapDbusDictToStruct(status, &model.IdentityStatus{}), nil
 }
 
-func (i *Identity) ReLogin() {
+func (i *Identity) ReLogin() error {
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
-	err := obj.ReLogin(context.Background())
-	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
-	}
+	return obj.ReLogin(context.Background())
 }
 
 func (i *Identity) Close() {

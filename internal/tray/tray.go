@@ -59,11 +59,16 @@ func (t *tray) OpenWindow(quickConnect bool) {
 	} else {
 		cmd = exec.Command(self)
 	}
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
 
 	t.closeChan = make(chan struct{})
 	err = cmd.Start()
 	go func() {
-		cmd.Process.Wait()
+		_, err := cmd.Process.Wait()
+		if err != nil {
+			log.Println(err)
+		}
 		t.window = nil
 		close(t.closeChan)
 	}()
@@ -94,8 +99,16 @@ func (t *tray) Run() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	// update tray
-	vStatus := vSer.GetStatus()
-	iStatus := iSer.GetStatus()
+	vStatus, err := vSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	iStatus, err := iSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
 	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
 		ctx.VPNInProgress = vStatus.InProgress
 		ctx.IdentityInProgress = iStatus.InProgress

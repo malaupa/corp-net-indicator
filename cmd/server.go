@@ -120,6 +120,9 @@ func (v VPN) Connect(password string, server string) *dbus.Error {
 }
 
 func (v VPN) Disconnect() *dbus.Error {
+	if true {
+		return dbus.MakeFailedError(fmt.Errorf("kaputt"))
+	}
 	log.Printf("VPN: Disconnect called!\n")
 	vS.emitVPNSignal(vS.setInProgress())
 	go func() {

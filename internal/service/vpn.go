@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 
 	vpn "de.telekom-mms.corp-net-indicator/internal/generated/vpn/server"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -56,44 +55,31 @@ func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
 
 func (v *VPN) Connect(password string, server string) error {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
-	err := obj.Connect(context.Background(), password, server)
-	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
-		return err
-	}
-	return nil
+	return obj.Connect(context.Background(), password, server)
 }
 
-func (v *VPN) Disconnect() {
+func (v *VPN) Disconnect() error {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
-	err := obj.Disconnect(context.Background())
-	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
-	}
+	return obj.Disconnect(context.Background())
 }
 
-func (v *VPN) GetStatus() *model.VPNStatus {
+func (v *VPN) GetStatus() (*model.VPNStatus, error) {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
+		return nil, err
 	}
-
-	return MapDbusDictToStruct(status, &model.VPNStatus{})
+	return MapDbusDictToStruct(status, &model.VPNStatus{}), nil
 }
 
-func (v *VPN) GetServerList() []string {
+func (v *VPN) GetServerList() ([]string, error) {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	servers, err := obj.ListServers(context.Background())
 	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
+		return []string{}, err
 	}
 
-	return servers
+	return servers, nil
 }
 
 func (v *VPN) Close() {

@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"log"
+	"os"
+
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/service"
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
@@ -41,6 +44,30 @@ func (s *Status) Run(quickConnect bool) {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 
+	// get actual status
+	vStatus, err := vSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	iStatus, err := iSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	s.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = vStatus.InProgress
+		ctx.Connected = vStatus.Connected
+		ctx.TrustedNetwork = vStatus.TrustedNetwork
+		ctx.IdentityInProgress = iStatus.InProgress
+		ctx.LoggedIn = iStatus.LoggedIn
+	})
+	servers, err := vSer.GetServerList()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
 	iChan := iSer.ListenToIdentity()
@@ -56,18 +83,20 @@ func (s *Status) Run(quickConnect bool) {
 				})
 				if c != nil {
 					if err := vSer.Connect(c.Password, c.Server); err != nil {
-						go s.window.NotifyError(err)
+						s.handleError(err)
 					}
 				} else {
-					vSer.Disconnect()
-					// TODO handle error
+					if err := vSer.Disconnect(); err != nil {
+						s.handleError(err)
+					}
 				}
 			case <-s.reLoginClicked:
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.IdentityInProgress = true
 				})
-				iSer.ReLogin()
-			// TODO handle error
+				if err := iSer.ReLogin(); err != nil {
+					s.handleError(err)
+				}
 			case status := <-iChan:
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.IdentityInProgress = status.InProgress
@@ -89,19 +118,15 @@ func (s *Status) Run(quickConnect bool) {
 		}
 	}()
 
-	// get actual status
-	vStatus := vSer.GetStatus()
-	s.ctx.Write(func(ctx *model.ContextValues) {
-		ctx.VPNInProgress = vStatus.InProgress
-		ctx.Connected = vStatus.Connected
-		ctx.TrustedNetwork = vStatus.TrustedNetwork
-	})
-	iStatus := iSer.GetStatus()
-	s.ctx.Write(func(ctx *model.ContextValues) {
-		ctx.IdentityInProgress = iStatus.InProgress
-		ctx.LoggedIn = iStatus.LoggedIn
-	})
 	// open window
-	s.window.Open(iStatus, vStatus, vSer.GetServerList(), quickConnect)
+	s.window.Open(iStatus, vStatus, servers, quickConnect)
 	close(c)
+}
+
+func (s *Status) handleError(err error) {
+	s.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = false
+		ctx.IdentityInProgress = false
+	})
+	go s.window.NotifyError(err)
 }

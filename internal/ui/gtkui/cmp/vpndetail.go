@@ -71,15 +71,15 @@ func NewVPNDetail(
 	vd.identityDetail.setButtonAndLoginState()
 	// progress
 	ctx := vd.ctx.Read()
-	if ctx.IdentityInProgress || ctx.VPNInProgress {
-		vd.actionBtn.SetSensitive(false)
+	if ctx.VPNInProgress {
 		vd.identityDetail.setReLoginBtn(false)
+		vd.actionBtn.SetSensitive(false)
+		vd.actionSpinner.Start()
 	}
 	return vd
 }
 
 func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
-	l := i18n.Localizer()
 	glib.IdleAdd(func() {
 		ctx := vd.ctx.Read()
 		if ctx.IdentityInProgress || ctx.VPNInProgress {
@@ -90,23 +90,29 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		vd.actionSpinner.Stop()
 		vd.trustedNetworkImg.setStatus(status.TrustedNetwork)
 		vd.connectedImg.setStatus(status.Connected)
 		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
-		if status.Connected {
-			vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
-		} else {
-			vd.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
-		}
-		if status.TrustedNetwork {
-			vd.actionBtn.SetSensitive(false)
-		} else {
-			vd.actionBtn.SetSensitive(true)
-		}
-		vd.identityDetail.setButtonAndLoginState()
+		vd.SetButtonsAfterProgress()
 		afterApply()
 	})
+}
+
+func (vd *VPNDetail) SetButtonsAfterProgress() {
+	l := i18n.Localizer()
+	ctx := vd.ctx.Read()
+	vd.actionSpinner.Stop()
+	if ctx.Connected {
+		vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+	} else {
+		vd.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
+	}
+	if ctx.TrustedNetwork {
+		vd.actionBtn.SetSensitive(false)
+	} else {
+		vd.actionBtn.SetSensitive(true)
+	}
+	vd.identityDetail.setButtonAndLoginState()
 }
 
 func (vd *VPNDetail) OnActionClicked() {
