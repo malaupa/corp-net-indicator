@@ -61,7 +61,7 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		sw.window.SetChild(overlay)
 		sw.window.Show()
 
-		if sw.quickConnect {
+		if sw.quickConnect && !vStatus.Connected {
 			sw.vpnDetail.OnActionClicked()
 		}
 	})

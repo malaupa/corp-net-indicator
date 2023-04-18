@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/server"
@@ -24,6 +25,8 @@ const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
 const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
 const V_DBUS_SERVICE_NAME = "de.telekomMMS.vpn"
 const V_DBUS_OBJECT_PATH = "/de/telekomMMS/vpn"
+
+var counter atomic.Int32
 
 type state struct {
 	sync.Mutex
@@ -120,8 +123,10 @@ func (v VPN) Connect(password string, server string) *dbus.Error {
 }
 
 func (v VPN) Disconnect() *dbus.Error {
-	if true {
-		return dbus.MakeFailedError(fmt.Errorf("kaputt"))
+	counter.Add(1)
+	if counter.Load()%3 == 0 {
+		counter.Store(0)
+		return dbus.MakeFailedError(fmt.Errorf("Disconnect failed"))
 	}
 	log.Printf("VPN: Disconnect called!\n")
 	vS.emitVPNSignal(vS.setInProgress())
