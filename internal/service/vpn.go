@@ -11,20 +11,20 @@ import (
 const V_DBUS_SERVICE_NAME = "de.telekomMMS.vpn"
 const V_DBUS_OBJECT_PATH = "/de/telekomMMS/vpn"
 
-type VPN struct {
+type VPNService struct {
 	conn       *dbus.Conn
 	statusChan chan *model.VPNStatus
 }
 
-func NewVPNService() *VPN {
+func NewVPNService() *VPNService {
 	conn, err := dbus.ConnectSystemBus()
 	if err != nil {
 		panic(err)
 	}
-	return &VPN{conn: conn, statusChan: make(chan *model.VPNStatus, 1)}
+	return &VPNService{conn: conn, statusChan: make(chan *model.VPNStatus, 1)}
 }
 
-func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
+func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
 	go func() {
 		var sigI *vpn.VpnStatusChangeSignal = nil
 		vpn.AddMatchSignal(v.conn, sigI)
@@ -53,17 +53,17 @@ func (v *VPN) ListenToVPN() <-chan *model.VPNStatus {
 	return v.statusChan
 }
 
-func (v *VPN) Connect(password string, server string) error {
+func (v *VPNService) Connect(password string, server string) error {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	return obj.Connect(context.Background(), password, server)
 }
 
-func (v *VPN) Disconnect() error {
+func (v *VPNService) Disconnect() error {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	return obj.Disconnect(context.Background())
 }
 
-func (v *VPN) GetStatus() (*model.VPNStatus, error) {
+func (v *VPNService) GetStatus() (*model.VPNStatus, error) {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
@@ -72,7 +72,7 @@ func (v *VPN) GetStatus() (*model.VPNStatus, error) {
 	return MapDbusDictToStruct(status, &model.VPNStatus{}), nil
 }
 
-func (v *VPN) GetServerList() ([]string, error) {
+func (v *VPNService) GetServerList() ([]string, error) {
 	obj := vpn.NewVpn(v.conn.Object(V_DBUS_SERVICE_NAME, V_DBUS_OBJECT_PATH))
 	servers, err := obj.ListServers(context.Background())
 	if err != nil {
@@ -82,6 +82,6 @@ func (v *VPN) GetServerList() ([]string, error) {
 	return servers, nil
 }
 
-func (v *VPN) Close() {
+func (v *VPNService) Close() {
 	v.conn.Close()
 }

@@ -19,7 +19,6 @@ func NewNotification() *Notification {
 	n.Revealer = gtk.NewRevealer()
 	n.Revealer.SetHAlign(gtk.AlignCenter)
 	n.Revealer.SetVAlign(gtk.AlignStart)
-	// n.revealer.SetVisible(false)
 
 	box := gtk.NewBox(gtk.OrientationHorizontal, 20)
 	box.SetCanFocus(false)
