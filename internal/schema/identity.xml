@@ -1,8 +1,5 @@
 <node>
   <interface name="de.telekomMMS.identity">
-    <!-- Properties -->
-    <property name="Version" type="u" access="read"/>
-    <property name="Status" type="a{sv}" access="read"/>
     <!-- Methods -->
     <method name="GetStatus">
       <arg type="a{sv}" name="status" direction="out"/>

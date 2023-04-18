@@ -1,8 +1,6 @@
 package cmp
 
 import (
-	"context"
-
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/util"
@@ -13,7 +11,8 @@ import (
 type VPNDetail struct {
 	detail
 
-	ctx           context.Context
+	ctx *model.Context
+
 	actionClicked chan *model.Credentials
 
 	trustedNetworkImg *statusIcon
@@ -29,11 +28,17 @@ type VPNDetail struct {
 	identityDetail *IdentityDetails
 }
 
-func NewVPNDetail(ctx context.Context, vpnActionClicked chan *model.Credentials, parent *gtk.Window, status *model.VPNStatus, identityDetail *IdentityDetails) *VPNDetail {
-	vd := &VPNDetail{detail: *newDetail(), ctx: ctx, actionClicked: vpnActionClicked, identityDetail: identityDetail}
+func NewVPNDetail(
+	context *model.Context,
+	vpnActionClicked chan *model.Credentials,
+	parent *gtk.Window,
+	status *model.VPNStatus,
+	servers []string,
+	identityDetail *IdentityDetails) *VPNDetail {
+	vd := &VPNDetail{detail: *newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
 	l := i18n.Localizer()
 
-	vd.loginDialog = newLoginDialog(parent, status.ServerList)
+	vd.loginDialog = newLoginDialog(parent, servers)
 
 	vd.actionBtn = gtk.NewButtonWithLabel(l.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)
@@ -62,49 +67,56 @@ func NewVPNDetail(ctx context.Context, vpnActionClicked chan *model.Credentials,
 		addRow(l.Sprintf("Device"), vd.deviceLabel).
 		addRow(l.Sprintf("Certificate expires"), vd.certExpiresLabel)
 
-	// set correct identity status
-	if !status.Connected && !status.TrustedNetwork {
-		vd.identityDetail.setLoggedOut()
-		vd.identityDetail.setReLoginBtn(false)
-	}
+		// set correct identity status
+	vd.identityDetail.setButtonAndLoginState()
 	// progress
-	if ctx.Value(model.InProgress).(int) > 0 {
-		vd.actionBtn.SetSensitive(false)
+	ctx := vd.ctx.Read()
+	if ctx.VPNInProgress {
 		vd.identityDetail.setReLoginBtn(false)
+		vd.actionBtn.SetSensitive(false)
+		vd.actionSpinner.Start()
 	}
 	return vd
 }
 
-func (vd *VPNDetail) Apply(ctx context.Context, status *model.VPNStatus, afterApply func()) {
-	vd.ctx = ctx
-	l := i18n.Localizer()
+func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 	glib.IdleAdd(func() {
-		vd.actionSpinner.Stop()
+		ctx := vd.ctx.Read()
+		if ctx.IdentityInProgress || ctx.VPNInProgress {
+			if ctx.VPNInProgress {
+				vd.actionSpinner.Start()
+			}
+			vd.actionBtn.SetSensitive(false)
+			vd.identityDetail.setReLoginBtn(false)
+			return
+		}
 		vd.trustedNetworkImg.setStatus(status.TrustedNetwork)
 		vd.connectedImg.setStatus(status.Connected)
 		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
-		if status.Connected {
-			vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
-		} else {
-			vd.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
-		}
-		if status.TrustedNetwork {
-			vd.actionBtn.SetSensitive(false)
-		} else {
-			vd.actionBtn.SetSensitive(true)
-		}
-		if !status.Connected && !status.TrustedNetwork {
-			vd.identityDetail.setLoggedOut()
-			vd.identityDetail.setReLoginBtn(false)
-		} else {
-			vd.identityDetail.setReLoginBtn(true)
-		}
+		vd.SetButtonsAfterProgress()
 		afterApply()
 	})
 }
 
+func (vd *VPNDetail) SetButtonsAfterProgress() {
+	l := i18n.Localizer()
+	ctx := vd.ctx.Read()
+	vd.actionSpinner.Stop()
+	if ctx.Connected {
+		vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+	} else {
+		vd.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
+	}
+	if ctx.TrustedNetwork {
+		vd.actionBtn.SetSensitive(false)
+	} else {
+		vd.actionBtn.SetSensitive(true)
+	}
+	vd.identityDetail.setButtonAndLoginState()
+}
+
 func (vd *VPNDetail) OnActionClicked() {
-	if vd.ctx.Value(model.Connected).(bool) {
+	if vd.ctx.Read().Connected {
 		go vd.triggerAction(nil)
 	} else {
 		resultChan := vd.loginDialog.open()

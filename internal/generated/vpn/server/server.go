@@ -29,9 +29,7 @@ var (
 			{Name: "status", Type: "a{sv}", Direction: "out"},
 		}},
 		},
-		Properties: []introspect.Property{{Name: "Version", Type: "u", Access: "read"},
-			{Name: "Status", Type: "a{sv}", Access: "read"},
-		},
+		Properties:  []introspect.Property{},
 		Annotations: []introspect.Annotation{},
 	}
 )
@@ -182,12 +180,6 @@ func (o *Vpn) Disconnect(ctx context.Context) (err error) {
 // ListServers calls de.telekomMMS.vpn.ListServers method.
 func (o *Vpn) ListServers(ctx context.Context) (servers []string, err error) {
 	err = o.object.CallWithContext(ctx, InterfaceVpn+".ListServers", 0).Store(&servers)
-	return
-}
-
-// GetVersion gets de.telekomMMS.vpn.Version property.
-func (o *Vpn) GetVersion(ctx context.Context) (version uint32, err error) {
-	err = o.object.CallWithContext(ctx, "org.freedesktop.DBus.Properties.Get", 0, InterfaceVpn, "Version").Store(&version)
 	return
 }
 

@@ -1,26 +1,38 @@
 package model
 
-import "context"
-
-type ctxKeys int
-
-const (
-	Trusted ctxKeys = iota
-	Connected
-	LoggedIn
-	InProgress
+import (
+	"sync"
 )
 
-func IncrementProgress(ctx context.Context) context.Context {
-	return context.WithValue(ctx, InProgress, ctx.Value(InProgress).(int)+1)
+type ContextValues struct {
+	TrustedNetwork     bool
+	Connected          bool
+	LoggedIn           bool
+	IdentityInProgress bool
+	VPNInProgress      bool
 }
 
-func DecrementProgress(ctx context.Context) context.Context {
-	val := ctx.Value(InProgress).(int)
-	if val == 0 {
-		return ctx
-	}
-	return context.WithValue(ctx, InProgress, val-1)
+type Context struct {
+	lock sync.RWMutex
+
+	values ContextValues
+}
+
+func NewContext() *Context {
+	return &Context{lock: sync.RWMutex{}, values: ContextValues{}}
+}
+
+func (c *Context) Write(writer func(ctx *ContextValues)) ContextValues {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+	writer(&c.values)
+	return c.values
+}
+
+func (c *Context) Read() ContextValues {
+	c.lock.RLock()
+	defer c.lock.RUnlock()
+	return c.values
 }
 
 type IdentityStatus struct {
@@ -28,6 +40,7 @@ type IdentityStatus struct {
 	LoggedIn        bool
 	LastKeepAliveAt int64
 	KrbIssuedAt     int64
+	InProgress      bool
 }
 
 type VPNStatus struct {
@@ -38,6 +51,11 @@ type VPNStatus struct {
 	ConnectedAt    int64
 	CertExpiresAt  int64
 	ServerList     []string
+	InProgress     bool
+}
+
+type CanBeInProgress interface {
+	VPNStatus | IdentityStatus
 }
 
 type Credentials struct {

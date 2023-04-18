@@ -1,32 +1,33 @@
 package tray
 
 import (
-	"context"
+	"log"
 	"os"
+	"os/exec"
 	"os/signal"
 
 	"de.telekom-mms.corp-net-indicator/internal/assets"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/ui"
 	"github.com/slytomcat/systray"
 )
 
 type tray struct {
-	status *ui.Status
+	ctx *model.Context
 
 	statusItem   *systray.MenuItem
 	actionItem   *systray.MenuItem
 	startSystray func()
 	quitSystray  func()
 
-	ctx context.Context
+	window    *os.Process
+	closeChan chan struct{}
 }
 
 // starts tray
-func New(ctx context.Context) *tray {
-	t := &tray{ctx: context.WithValue(ctx, model.InProgress, 0), status: ui.NewStatus()}
+func New() *tray {
+	t := &tray{ctx: model.NewContext()}
 	// create tray
 	t.startSystray, t.quitSystray = systray.RunWithExternalLoop(t.onReady, func() {})
 	return t
@@ -45,6 +46,52 @@ func (t *tray) onReady() {
 	t.actionItem.Hide()
 }
 
+func (t *tray) OpenWindow(quickConnect bool) {
+	t.closeWindow()
+	self, err := os.Executable()
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	var cmd *exec.Cmd
+	if quickConnect {
+		cmd = exec.Command(self, "-quick")
+	} else {
+		cmd = exec.Command(self)
+	}
+	cmd.Stderr = os.Stderr
+	cmd.Stdout = os.Stdout
+
+	t.closeChan = make(chan struct{})
+	err = cmd.Start()
+	go func() {
+		_, err := cmd.Process.Wait()
+		if err != nil {
+			log.Println(err)
+		}
+		t.window = nil
+		close(t.closeChan)
+	}()
+	if err != nil {
+		log.Println(err)
+	}
+	t.window = cmd.Process
+}
+
+func (t *tray) closeWindow() {
+	if t.window != nil {
+		err := t.window.Signal(os.Interrupt)
+		if err != nil {
+			log.Println(err)
+			err = t.window.Kill()
+			if err != nil {
+				log.Println(err)
+			}
+		}
+		<-t.closeChan
+	}
+}
+
 func (t *tray) Run() {
 	// start tray
 	t.startSystray()
@@ -52,8 +99,24 @@ func (t *tray) Run() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	// update tray
-	t.applyVPNStatus(vSer.GetStatus())
-	t.applyIdentityStatus(iSer.GetStatus())
+	vStatus, err := vSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	iStatus, err := iSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = vStatus.InProgress
+		ctx.IdentityInProgress = iStatus.InProgress
+		ctx.TrustedNetwork = vStatus.TrustedNetwork
+		ctx.Connected = vStatus.Connected
+		ctx.LoggedIn = iStatus.LoggedIn
+	})
+	t.apply(ctx)
 
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
@@ -67,42 +130,30 @@ func (t *tray) Run() {
 		select {
 		// handle tray menu clicks
 		case <-t.statusItem.ClickedCh:
-			t.status.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), false)
+			t.OpenWindow(false)
 		case <-t.actionItem.ClickedCh:
-			if t.ctx.Value(model.Connected).(bool) {
-				t.status.CloseWindow()
+			if t.ctx.Read().Connected {
 				t.actionItem.Disable()
-				t.ctx = model.IncrementProgress(t.ctx)
 				vSer.Disconnect()
 			} else {
-				t.status.OpenWindow(t.ctx, iSer.GetStatus(), vSer.GetStatus(), true)
+				t.OpenWindow(true)
 			}
-		// handle window clicks
-		case c := <-t.status.ConnectDisconnectClicked:
-			t.actionItem.Disable()
-			t.ctx = model.IncrementProgress(t.ctx)
-			if c != nil {
-				if err := vSer.Connect(c.Password, c.Server); err != nil {
-					t.status.NotifyError(err)
-				}
-			} else {
-				vSer.Disconnect()
-				// TODO handle error
-			}
-		case <-t.status.ReLoginClicked:
-			t.ctx = model.IncrementProgress(t.ctx)
-			iSer.ReLogin()
-			// TODO handle error
 		// handle status updates
 		case status := <-iChan:
-			t.ctx = model.DecrementProgress(t.ctx)
-			t.applyIdentityStatus(status)
+			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+				ctx.IdentityInProgress = status.InProgress
+				ctx.LoggedIn = status.LoggedIn
+			})
+			t.apply(ctx)
 		case status := <-vChan:
-			t.ctx = model.DecrementProgress(t.ctx)
-			t.actionItem.Enable()
-			t.applyVPNStatus(status)
+			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
+				ctx.VPNInProgress = status.InProgress
+				ctx.TrustedNetwork = status.TrustedNetwork
+				ctx.Connected = status.Connected
+			})
+			t.apply(ctx)
 		case <-c:
-			t.status.CloseWindow()
+			t.closeWindow()
 			vSer.Close()
 			iSer.Close()
 			t.quitSystray()
@@ -111,41 +162,34 @@ func (t *tray) Run() {
 	}
 }
 
-func (t *tray) applyIdentityStatus(status *model.IdentityStatus) {
-	t.ctx = context.WithValue(t.ctx, model.LoggedIn, status.LoggedIn)
-	t.status.ApplyIdentityStatus(t.ctx, status)
-	trusted := t.ctx.Value(model.Trusted).(bool)
-	connected := t.ctx.Value(model.Connected).(bool)
-	if status.LoggedIn && (connected || trusted) {
+func (t *tray) apply(ctx model.ContextValues) {
+	l := i18n.Localizer()
+	// icon
+	if ctx.LoggedIn && (ctx.Connected || ctx.TrustedNetwork) {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
 	} else {
-		if connected || trusted {
+		if ctx.Connected || ctx.TrustedNetwork {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
 		} else {
 			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 		}
 	}
-}
-
-func (t *tray) applyVPNStatus(status *model.VPNStatus) {
-	l := i18n.Localizer()
-	t.ctx = context.WithValue(t.ctx, model.Trusted, status.TrustedNetwork)
-	t.ctx = context.WithValue(t.ctx, model.Connected, status.Connected)
-	t.status.ApplyVPNStatus(t.ctx, status)
-	t.actionItem.Enable()
-	if status.Connected {
-		systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+	// action menu item
+	if ctx.VPNInProgress {
+		t.actionItem.Disable()
+	} else {
+		t.actionItem.Enable()
+	}
+	if ctx.Connected {
 		t.actionItem.SetTitle(l.Sprintf("Disconnect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Disconnect))
 		t.actionItem.Show()
 	} else {
 		t.actionItem.SetTitle(l.Sprintf("Connect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Connect))
-		if status.TrustedNetwork {
-			systray.SetIcon(assets.GetIcon(assets.ShieldOn))
+		if ctx.TrustedNetwork {
 			t.actionItem.Hide()
 		} else {
-			systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 			t.actionItem.Show()
 		}
 	}

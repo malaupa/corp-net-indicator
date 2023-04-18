@@ -1,72 +1,132 @@
 package ui
 
 import (
-	"context"
+	"log"
+	"os"
 
 	"de.telekom-mms.corp-net-indicator/internal/model"
+	"de.telekom-mms.corp-net-indicator/internal/service"
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
 )
 
 // minimal interface to interact with an ui implementation
 type StatusWindow interface {
-	Open(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool)
+	Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool)
 	Close()
-	ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus)
-	ApplyVPNStatus(ctx context.Context, status *model.VPNStatus)
+	ApplyIdentityStatus(status *model.IdentityStatus)
+	ApplyVPNStatus(status *model.VPNStatus)
 	NotifyError(err error)
 }
 
 // holds data channels for updates and a window handle
 // is used to free memory after closing window
 type Status struct {
-	ConnectDisconnectClicked chan *model.Credentials
-	ReLoginClicked           chan bool
+	ctx *model.Context
 
-	window    StatusWindow
-	closeChan chan struct{}
+	connectDisconnectClicked chan *model.Credentials
+	reLoginClicked           chan bool
+
+	window StatusWindow
 }
 
 func NewStatus() *Status {
-	return &Status{
-		ConnectDisconnectClicked: make(chan *model.Credentials),
-		ReLoginClicked:           make(chan bool),
+	s := &Status{
+		ctx:                      model.NewContext(),
+		connectDisconnectClicked: make(chan *model.Credentials),
+		reLoginClicked:           make(chan bool),
 	}
+	s.window = gtkui.NewStatusWindow(s.ctx, s.connectDisconnectClicked, s.reLoginClicked)
+	return s
 }
 
-func (s *Status) OpenWindow(ctx context.Context, iStatus *model.IdentityStatus, vStatus *model.VPNStatus, quickConnect bool) {
-	if s.window != nil {
-		s.CloseWindow()
+func (s *Status) Run(quickConnect bool) {
+	// create services
+	vSer := service.NewVPNService()
+	iSer := service.NewIdentityService()
+
+	// get actual status
+	vStatus, err := vSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
 	}
-	s.window = gtkui.NewStatusWindow(s.ConnectDisconnectClicked, s.ReLoginClicked)
+	iStatus, err := iSer.GetStatus()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+	s.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = vStatus.InProgress
+		ctx.Connected = vStatus.Connected
+		ctx.TrustedNetwork = vStatus.TrustedNetwork
+		ctx.IdentityInProgress = iStatus.InProgress
+		ctx.LoggedIn = iStatus.LoggedIn
+	})
+	servers, err := vSer.GetServerList()
+	if err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+
+	// listen to status changes
+	vChan := vSer.ListenToVPN()
+	iChan := iSer.ListenToIdentity()
+
+	c := make(chan struct{})
 	go func() {
-		s.closeChan = make(chan struct{})
-		s.window.Open(ctx, iStatus, vStatus, quickConnect)
-		s.window = nil
-		close(s.closeChan)
+		for {
+			select {
+			// handle window clicks
+			case c := <-s.connectDisconnectClicked:
+				s.ctx.Write(func(ctx *model.ContextValues) {
+					ctx.VPNInProgress = true
+				})
+				if c != nil {
+					if err := vSer.Connect(c.Password, c.Server); err != nil {
+						s.handleError(err)
+					}
+				} else {
+					if err := vSer.Disconnect(); err != nil {
+						s.handleError(err)
+					}
+				}
+			case <-s.reLoginClicked:
+				s.ctx.Write(func(ctx *model.ContextValues) {
+					ctx.IdentityInProgress = true
+				})
+				if err := iSer.ReLogin(); err != nil {
+					s.handleError(err)
+				}
+			case status := <-iChan:
+				s.ctx.Write(func(ctx *model.ContextValues) {
+					ctx.IdentityInProgress = status.InProgress
+					ctx.LoggedIn = status.LoggedIn
+				})
+				go s.window.ApplyIdentityStatus(status)
+			case status := <-vChan:
+				s.ctx.Write(func(ctx *model.ContextValues) {
+					ctx.VPNInProgress = status.InProgress
+					ctx.Connected = status.Connected
+					ctx.TrustedNetwork = status.TrustedNetwork
+				})
+				go s.window.ApplyVPNStatus(status)
+			case <-c:
+				vSer.Close()
+				iSer.Close()
+				return
+			}
+		}
 	}()
+
+	// open window
+	s.window.Open(iStatus, vStatus, servers, quickConnect)
+	close(c)
 }
 
-func (s *Status) CloseWindow() {
-	if s.window != nil {
-		s.window.Close()
-		<-s.closeChan
-	}
-}
-
-func (s *Status) NotifyError(err error) {
-	if s.window != nil {
-		go s.window.NotifyError(err)
-	}
-}
-
-func (s *Status) ApplyVPNStatus(ctx context.Context, status *model.VPNStatus) {
-	if s.window != nil {
-		go s.window.ApplyVPNStatus(ctx, status)
-	}
-}
-
-func (s *Status) ApplyIdentityStatus(ctx context.Context, status *model.IdentityStatus) {
-	if s.window != nil {
-		go s.window.ApplyIdentityStatus(ctx, status)
-	}
+func (s *Status) handleError(err error) {
+	s.ctx.Write(func(ctx *model.ContextValues) {
+		ctx.VPNInProgress = false
+		ctx.IdentityInProgress = false
+	})
+	go s.window.NotifyError(err)
 }

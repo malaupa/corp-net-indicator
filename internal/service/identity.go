@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"log"
 
 	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/client"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -12,20 +11,20 @@ import (
 const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
 const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
 
-type Identity struct {
+type IdentityService struct {
 	conn       *dbus.Conn
 	statusChan chan *model.IdentityStatus
 }
 
-func NewIdentityService() *Identity {
+func NewIdentityService() *IdentityService {
 	conn, err := dbus.ConnectSessionBus()
 	if err != nil {
 		panic(err)
 	}
-	return &Identity{conn: conn, statusChan: make(chan *model.IdentityStatus, 1)}
+	return &IdentityService{conn: conn, statusChan: make(chan *model.IdentityStatus, 1)}
 }
 
-func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
+func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 	go func() {
 		var sigI *identity.IdentityStatusChangeSignal = nil
 		identity.AddMatchSignal(i.conn, sigI)
@@ -54,26 +53,21 @@ func (i *Identity) ListenToIdentity() <-chan *model.IdentityStatus {
 	return i.statusChan
 }
 
-func (i *Identity) GetStatus() *model.IdentityStatus {
+func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
+		return nil, err
 	}
 
-	return MapDbusDictToStruct(status, &model.IdentityStatus{})
+	return MapDbusDictToStruct(status, &model.IdentityStatus{}), nil
 }
 
-func (i *Identity) ReLogin() {
+func (i *IdentityService) ReLogin() error {
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
-	err := obj.ReLogin(context.Background())
-	if err != nil {
-		// TODO enhance logging
-		log.Println(err)
-	}
+	return obj.ReLogin(context.Background())
 }
 
-func (i *Identity) Close() {
+func (i *IdentityService) Close() {
 	i.conn.Close()
 }
