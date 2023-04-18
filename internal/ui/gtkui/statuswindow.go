@@ -17,7 +17,8 @@ type statusWindow struct {
 	vpnActionClicked chan *model.Credentials
 	reLoginClicked   chan bool
 
-	window *gtk.ApplicationWindow
+	window       *gtk.ApplicationWindow
+	notification *cmp.Notification
 
 	identityDetail *cmp.IdentityDetails
 	vpnDetail      *cmp.VPNDetail
@@ -52,7 +53,12 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		details.Append(sw.identityDetail)
 		details.Append(sw.vpnDetail)
 
-		sw.window.SetChild(details)
+		sw.notification = cmp.NewNotification()
+		overlay := gtk.NewOverlay()
+		overlay.SetChild(details)
+		overlay.AddOverlay(sw.notification.Revealer)
+
+		sw.window.SetChild(overlay)
 		sw.window.Show()
 
 		if sw.quickConnect {
@@ -97,7 +103,9 @@ func (sw *statusWindow) NotifyError(err error) {
 	if sw.window == nil {
 		return
 	}
+	l := i18n.Localizer()
 	glib.IdleAdd(func() {
 		sw.vpnDetail.SetButtonsAfterProgress()
+		sw.notification.Show(l.Sprintf("Got error: [%v]", err))
 	})
 }
