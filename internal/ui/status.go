@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"log"
 	"os"
 
+	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/service"
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
@@ -47,12 +47,12 @@ func (s *Status) Run(quickConnect bool) {
 	// get actual status
 	vStatus, err := vSer.GetStatus()
 	if err != nil {
-		log.Println(err)
+		logger.Logf("DBUS error: %v\n", err)
 		os.Exit(1)
 	}
 	iStatus, err := iSer.GetStatus()
 	if err != nil {
-		log.Println(err)
+		logger.Logf("DBUS error: %v\n", err)
 		os.Exit(1)
 	}
 	s.ctx.Write(func(ctx *model.ContextValues) {
@@ -64,7 +64,7 @@ func (s *Status) Run(quickConnect bool) {
 	})
 	servers, err := vSer.GetServerList()
 	if err != nil {
-		log.Println(err)
+		logger.Logf("DBUS error: %v\n", err)
 		os.Exit(1)
 	}
 

@@ -18,7 +18,6 @@ func newLoginDialog(parent *gtk.Window, serverList []string) *loginDialog {
 }
 
 func (d *loginDialog) open() <-chan *model.Credentials {
-	l := i18n.Localizer()
 	const dialogFlags = 0 |
 		gtk.DialogDestroyWithParent |
 		gtk.DialogModal |
@@ -27,13 +26,13 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	d.dialog = gtk.NewDialogWithFlags("", d.parent, dialogFlags)
 	d.dialog.SetResizable(false)
 
-	passwordLabel := gtk.NewLabel(l.Sprintf("Password"))
+	passwordLabel := gtk.NewLabel(i18n.L.Sprintf("Password"))
 	passwordLabel.SetHAlign(gtk.AlignStart)
 	passwordEntry := gtk.NewPasswordEntry()
 	passwordEntry.SetHExpand(false)
 	passwordEntry.SetVExpand(false)
 	passwordEntry.SetHAlign(gtk.AlignStart)
-	serverLabel := gtk.NewLabel(l.Sprintf("Server"))
+	serverLabel := gtk.NewLabel(i18n.L.Sprintf("Server"))
 	serverLabel.SetHAlign(gtk.AlignStart)
 	// currently dropdown is buggy, selection is not set in every case
 	// serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
@@ -60,7 +59,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 
 	result := make(chan *model.Credentials)
 
-	okBtn := d.dialog.AddButton(l.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
+	okBtn := d.dialog.AddButton(i18n.L.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
 	okBtn.SetSensitive(false)
 	okBtn.AddCSSClass("suggested-action")
 	okBtn.ConnectClicked(func() {
@@ -82,7 +81,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 		}
 	})
 
-	ccBtn := d.dialog.AddButton(l.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
+	ccBtn := d.dialog.AddButton(i18n.L.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
 	ccBtn.ConnectClicked(d.close)
 
 	// bind esc

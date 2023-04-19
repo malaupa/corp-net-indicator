@@ -1,9 +1,8 @@
 package gtkui
 
 import (
-	"log"
-
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
+	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
@@ -32,9 +31,8 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
-		l := i18n.Localizer()
 		sw.window = gtk.NewApplicationWindow(app)
-		sw.window.SetTitle(l.Sprintf("Corporate Network Status"))
+		sw.window.SetTitle("Corporate Network Status")
 		sw.window.SetResizable(false)
 
 		headerBar := gtk.NewHeaderBar()
@@ -67,8 +65,7 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 	})
 
 	if code := app.Run([]string{}); code > 0 {
-		// TODO enhance logging
-		log.Println("Failed to open window")
+		logger.Log("Failed to open window")
 	}
 }
 
@@ -103,9 +100,8 @@ func (sw *statusWindow) NotifyError(err error) {
 	if sw.window == nil {
 		return
 	}
-	l := i18n.Localizer()
 	glib.IdleAdd(func() {
 		sw.vpnDetail.SetButtonsAfterProgress()
-		sw.notification.Show(l.Sprintf("Got error: [%v]", err))
+		sw.notification.Show(i18n.L.Sprintf("Error: [%v]", err))
 	})
 }

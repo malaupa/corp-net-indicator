@@ -24,8 +24,7 @@ type IdentityDetails struct {
 func NewIdentityDetails(ctx *model.Context, reLoginClicked chan bool, status *model.IdentityStatus) *IdentityDetails {
 	id := &IdentityDetails{detail: *newDetail(), ctx: ctx, reLoginClicked: reLoginClicked}
 
-	l := i18n.Localizer()
-	id.reLoginBtn = gtk.NewButtonWithLabel(l.Sprintf("ReLogin"))
+	id.reLoginBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("ReLogin"))
 	id.reLoginBtn.SetHAlign(gtk.AlignEnd)
 	id.reLoginBtn.ConnectClicked(id.onReLoginClicked)
 	id.loggedInImg = newStatusIcon(status.LoggedIn)
@@ -35,10 +34,10 @@ func NewIdentityDetails(ctx *model.Context, reLoginClicked chan bool, status *mo
 	id.krbIssuedAtLabel = gtk.NewLabel(util.FormatDate(status.KrbIssuedAt))
 
 	id.
-		buildBase(l.Sprintf("Identity Details")).
-		addRow(l.Sprintf("Logged in"), id.reLoginSpinner, id.reLoginBtn, id.loggedInImg).
-		addRow(l.Sprintf("Last Refresh"), id.keepAliveAtLabel).
-		addRow(l.Sprintf("Kerberos ticket issued"), id.krbIssuedAtLabel)
+		buildBase(i18n.L.Sprintf("Identity Details")).
+		addRow(i18n.L.Sprintf("Logged in"), id.reLoginSpinner, id.reLoginBtn, id.loggedInImg).
+		addRow(i18n.L.Sprintf("Last Refresh"), id.keepAliveAtLabel).
+		addRow(i18n.L.Sprintf("Kerberos ticket issued"), id.krbIssuedAtLabel)
 
 	if ctx.Read().IdentityInProgress {
 		id.reLoginSpinner.Start()

@@ -22,9 +22,49 @@
             "translation": "Mit dem VPN verbinden"
         },
         {
-            "id": "Connect",
-            "message": "Connect",
-            "translation": "Verbinden"
+            "id": "Disconnect VPN",
+            "message": "Disconnect VPN",
+            "translation": "VPN trennen"
+        },
+        {
+            "id": "Error: [{Err}]",
+            "message": "Error: [{Err}]",
+            "translation": "Fehler: [{Err}]",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ]
+        },
+        {
+            "id": "ReLogin",
+            "message": "ReLogin",
+            "translation": "Neu anmelden"
+        },
+        {
+            "id": "Identity Details",
+            "message": "Identity Details",
+            "translation": "Identity Details"
+        },
+        {
+            "id": "Logged in",
+            "message": "Logged in",
+            "translation": "Angemeldet"
+        },
+        {
+            "id": "Last Refresh",
+            "message": "Last Refresh",
+            "translation": "Letzte Anmeldung"
+        },
+        {
+            "id": "Kerberos ticket issued",
+            "message": "Kerberos ticket issued",
+            "translation": "Kerberos Ticket erhalten"
         },
         {
             "id": "Password",
@@ -32,9 +72,54 @@
             "translation": "Passwort"
         },
         {
-            "id": "Error!",
-            "message": "Error!",
-            "translation": "Fehler!"
+            "id": "Server",
+            "message": "Server",
+            "translation": "Server"
+        },
+        {
+            "id": "Connect",
+            "message": "Connect",
+            "translation": "Verbinden"
+        },
+        {
+            "id": "Cancel",
+            "message": "Cancel",
+            "translation": "Abbrechen"
+        },
+        {
+            "id": "VPN Details",
+            "message": "VPN Details",
+            "translation": "VPN Details"
+        },
+        {
+            "id": "Trusted Network",
+            "message": "Trusted Network",
+            "translation": "Trusted Network"
+        },
+        {
+            "id": "Connected",
+            "message": "Connected",
+            "translation": "Verbunden"
+        },
+        {
+            "id": "Connected at",
+            "message": "Connected at",
+            "translation": "Verbunden am"
+        },
+        {
+            "id": "IP",
+            "message": "IP",
+            "translation": "IP"
+        },
+        {
+            "id": "Device",
+            "message": "Device",
+            "translation": "Gerät"
+        },
+        {
+            "id": "Certificate expires",
+            "message": "Certificate expires",
+            "translation": "Zertifikat läuft aus am"
         }
     ]
 }

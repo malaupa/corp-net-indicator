@@ -30,9 +30,61 @@
             "fuzzy": true
         },
         {
-            "id": "Connect",
-            "message": "Connect",
-            "translation": "Connect",
+            "id": "Disconnect VPN",
+            "message": "Disconnect VPN",
+            "translation": "Disconnect VPN",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Error: [{Err}]",
+            "message": "Error: [{Err}]",
+            "translation": "Error: [{Err}]",
+            "translatorComment": "Copied from source.",
+            "placeholders": [
+                {
+                    "id": "Err",
+                    "string": "%[1]v",
+                    "type": "error",
+                    "underlyingType": "interface{Error() string}",
+                    "argNum": 1,
+                    "expr": "err"
+                }
+            ],
+            "fuzzy": true
+        },
+        {
+            "id": "ReLogin",
+            "message": "ReLogin",
+            "translation": "ReLogin",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Identity Details",
+            "message": "Identity Details",
+            "translation": "Identity Details",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Logged in",
+            "message": "Logged in",
+            "translation": "Logged in",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Last Refresh",
+            "message": "Last Refresh",
+            "translation": "Last Refresh",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Kerberos ticket issued",
+            "message": "Kerberos ticket issued",
+            "translation": "Kerberos ticket issued",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -44,9 +96,72 @@
             "fuzzy": true
         },
         {
-            "id": "Error!",
-            "message": "Error!",
-            "translation": "Error!",
+            "id": "Server",
+            "message": "Server",
+            "translation": "Server",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connect",
+            "message": "Connect",
+            "translation": "Connect",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Cancel",
+            "message": "Cancel",
+            "translation": "Cancel",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "VPN Details",
+            "message": "VPN Details",
+            "translation": "VPN Details",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Trusted Network",
+            "message": "Trusted Network",
+            "translation": "Trusted Network",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connected",
+            "message": "Connected",
+            "translation": "Connected",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Connected at",
+            "message": "Connected at",
+            "translation": "Connected at",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "IP",
+            "message": "IP",
+            "translation": "IP",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Device",
+            "message": "Device",
+            "translation": "Device",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "Certificate expires",
+            "message": "Certificate expires",
+            "translation": "Certificate expires",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         }

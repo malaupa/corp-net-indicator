@@ -8,14 +8,12 @@ import (
 	"golang.org/x/text/message"
 )
 
-// TODO use context here...
-var l *message.Printer
+var L *message.Printer
 
 // returns printer to translate messages
-func Localizer() *message.Printer {
-	if l == nil {
+func init() {
+	if L == nil {
 		locale := os.Getenv("LANG")
-		l = message.NewPrinter(message.MatchLanguage(locale[:2]))
+		L = message.NewPrinter(message.MatchLanguage(locale[:2]))
 	}
-	return l
 }

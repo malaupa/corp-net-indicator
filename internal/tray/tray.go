@@ -1,13 +1,13 @@
 package tray
 
 import (
-	"log"
 	"os"
 	"os/exec"
 	"os/signal"
 
 	"de.telekom-mms.corp-net-indicator/internal/assets"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
+	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"de.telekom-mms.corp-net-indicator/internal/service"
 	"github.com/slytomcat/systray"
@@ -35,13 +35,11 @@ func New() *tray {
 
 // init tray
 func (t *tray) onReady() {
-	// translations
-	l := i18n.Localizer()
 	// set up menu
 	systray.SetIcon(assets.GetIcon(assets.ShieldOff))
-	t.statusItem = systray.AddMenuItem(l.Sprintf("Status"), l.Sprintf("Show Status"))
+	t.statusItem = systray.AddMenuItem(i18n.L.Sprintf("Status"), i18n.L.Sprintf("Show Status"))
 	t.statusItem.SetIcon(assets.GetIcon(assets.Status))
-	t.actionItem = systray.AddMenuItem(l.Sprintf("Connect VPN"), l.Sprintf("Connect to VPN"))
+	t.actionItem = systray.AddMenuItem(i18n.L.Sprintf("Connect VPN"), i18n.L.Sprintf("Connect to VPN"))
 	t.actionItem.SetIcon(assets.GetIcon(assets.Connect))
 	t.actionItem.Hide()
 }
@@ -50,7 +48,7 @@ func (t *tray) OpenWindow(quickConnect bool) {
 	t.closeWindow()
 	self, err := os.Executable()
 	if err != nil {
-		log.Println(err)
+		logger.Verbose(err)
 		return
 	}
 	var cmd *exec.Cmd
@@ -67,13 +65,13 @@ func (t *tray) OpenWindow(quickConnect bool) {
 	go func() {
 		_, err := cmd.Process.Wait()
 		if err != nil {
-			log.Println(err)
+			logger.Verbose(err)
 		}
 		t.window = nil
 		close(t.closeChan)
 	}()
 	if err != nil {
-		log.Println(err)
+		logger.Verbose(err)
 	}
 	t.window = cmd.Process
 }
@@ -82,10 +80,10 @@ func (t *tray) closeWindow() {
 	if t.window != nil {
 		err := t.window.Signal(os.Interrupt)
 		if err != nil {
-			log.Println(err)
+			logger.Verbosef("SIGINT not working: %v\n", err)
 			err = t.window.Kill()
 			if err != nil {
-				log.Println(err)
+				logger.Verbosef("SIGKILL not working: %v\n", err)
 			}
 		}
 		<-t.closeChan
@@ -101,12 +99,12 @@ func (t *tray) Run() {
 	// update tray
 	vStatus, err := vSer.GetStatus()
 	if err != nil {
-		log.Println(err)
+		logger.Logf("DBUS error: %v\n", err)
 		os.Exit(1)
 	}
 	iStatus, err := iSer.GetStatus()
 	if err != nil {
-		log.Println(err)
+		logger.Logf("DBUS error: %v\n", err)
 		os.Exit(1)
 	}
 	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
@@ -163,7 +161,6 @@ func (t *tray) Run() {
 }
 
 func (t *tray) apply(ctx model.ContextValues) {
-	l := i18n.Localizer()
 	// icon
 	if ctx.LoggedIn && (ctx.Connected || ctx.TrustedNetwork) {
 		systray.SetIcon(assets.GetIcon(assets.Umbrella))
@@ -181,11 +178,11 @@ func (t *tray) apply(ctx model.ContextValues) {
 		t.actionItem.Enable()
 	}
 	if ctx.Connected {
-		t.actionItem.SetTitle(l.Sprintf("Disconnect VPN"))
+		t.actionItem.SetTitle(i18n.L.Sprintf("Disconnect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Disconnect))
 		t.actionItem.Show()
 	} else {
-		t.actionItem.SetTitle(l.Sprintf("Connect VPN"))
+		t.actionItem.SetTitle(i18n.L.Sprintf("Connect VPN"))
 		t.actionItem.SetIcon(assets.GetIcon(assets.Connect))
 		if ctx.TrustedNetwork {
 			t.actionItem.Hide()

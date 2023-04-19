@@ -36,14 +36,13 @@ func NewVPNDetail(
 	servers []string,
 	identityDetail *IdentityDetails) *VPNDetail {
 	vd := &VPNDetail{detail: *newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
-	l := i18n.Localizer()
 
 	vd.loginDialog = newLoginDialog(parent, servers)
 
-	vd.actionBtn = gtk.NewButtonWithLabel(l.Sprintf("Connect VPN"))
+	vd.actionBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)
 	if status.Connected {
-		vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+		vd.actionBtn.SetLabel(i18n.L.Sprintf("Disconnect VPN"))
 	}
 	if status.TrustedNetwork {
 		vd.actionBtn.SetSensitive(false)
@@ -54,18 +53,18 @@ func NewVPNDetail(
 	vd.trustedNetworkImg = newStatusIcon(status.TrustedNetwork)
 	vd.connectedImg = newStatusIcon(status.Connected)
 	vd.connectedAtLabel = gtk.NewLabel(util.FormatDate(status.ConnectedAt))
-	vd.ipLabel = gtk.NewLabel(status.IP)
-	vd.deviceLabel = gtk.NewLabel(status.Device)
+	vd.ipLabel = gtk.NewLabel(util.FormatValue(status.IP))
+	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
 	vd.certExpiresLabel = gtk.NewLabel(util.FormatDate(status.CertExpiresAt))
 
 	vd.
-		buildBase(l.Sprintf("VPN Details")).
-		addRow(l.Sprintf("Trusted Network"), vd.trustedNetworkImg).
-		addRow(l.Sprintf("Connected"), vd.actionSpinner, vd.actionBtn, vd.connectedImg).
-		addRow(l.Sprintf("Connect at"), vd.connectedAtLabel).
-		addRow(l.Sprintf("IP"), vd.ipLabel).
-		addRow(l.Sprintf("Device"), vd.deviceLabel).
-		addRow(l.Sprintf("Certificate expires"), vd.certExpiresLabel)
+		buildBase(i18n.L.Sprintf("VPN Details")).
+		addRow(i18n.L.Sprintf("Trusted Network"), vd.trustedNetworkImg).
+		addRow(i18n.L.Sprintf("Connected"), vd.actionSpinner, vd.actionBtn, vd.connectedImg).
+		addRow(i18n.L.Sprintf("Connected at"), vd.connectedAtLabel).
+		addRow(i18n.L.Sprintf("IP"), vd.ipLabel).
+		addRow(i18n.L.Sprintf("Device"), vd.deviceLabel).
+		addRow(i18n.L.Sprintf("Certificate expires"), vd.certExpiresLabel)
 
 		// set correct identity status
 	vd.identityDetail.setButtonAndLoginState()
@@ -93,19 +92,20 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 		vd.trustedNetworkImg.setStatus(status.TrustedNetwork)
 		vd.connectedImg.setStatus(status.Connected)
 		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
+		vd.deviceLabel.SetText(util.FormatValue(status.Device))
+		vd.ipLabel.SetText(util.FormatValue(status.IP))
 		vd.SetButtonsAfterProgress()
 		afterApply()
 	})
 }
 
 func (vd *VPNDetail) SetButtonsAfterProgress() {
-	l := i18n.Localizer()
 	ctx := vd.ctx.Read()
 	vd.actionSpinner.Stop()
 	if ctx.Connected {
-		vd.actionBtn.SetLabel(l.Sprintf("Disconnect VPN"))
+		vd.actionBtn.SetLabel(i18n.L.Sprintf("Disconnect VPN"))
 	} else {
-		vd.actionBtn.SetLabel(l.Sprintf("Connect VPN"))
+		vd.actionBtn.SetLabel(i18n.L.Sprintf("Connect VPN"))
 	}
 	if ctx.TrustedNetwork {
 		vd.actionBtn.SetSensitive(false)
