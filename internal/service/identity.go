@@ -1,9 +1,12 @@
 package service
 
+//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package identity -camelize -output ../generated/identity/client/client.go ../schema/identity.xml
+
 import (
 	"context"
 
 	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/client"
+	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )
@@ -25,6 +28,7 @@ func NewIdentityService() *IdentityService {
 }
 
 func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
+	logger.Verbose("Listening to identity status")
 	go func() {
 		var sigI *identity.IdentityStatusChangeSignal = nil
 		identity.AddMatchSignal(i.conn, sigI)
@@ -39,6 +43,7 @@ func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 				if err == identity.ErrUnknownSignal {
 					continue
 				}
+				logger.Logf("DBUS error: %v\n", err)
 				panic(err)
 			}
 
@@ -54,6 +59,7 @@ func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 }
 
 func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
+	logger.Verbose("Call GetStatus")
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	status, err := obj.GetStatus(context.Background())
 	if err != nil {
@@ -64,10 +70,13 @@ func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 }
 
 func (i *IdentityService) ReLogin() error {
+	logger.Verbose("Call ReLogin")
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	return obj.ReLogin(context.Background())
 }
 
 func (i *IdentityService) Close() {
 	i.conn.Close()
+	close(i.statusChan)
+	logger.Verbose("Service closed")
 }

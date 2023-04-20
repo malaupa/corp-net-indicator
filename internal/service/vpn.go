@@ -1,9 +1,12 @@
 package service
 
+//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package vpn -camelize -output ../generated/vpn/client/client.go ../schema/vpn.xml
+
 import (
 	"context"
 
 	vpn "de.telekom-mms.corp-net-indicator/internal/generated/vpn/server"
+	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )
@@ -39,6 +42,7 @@ func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
 				if err == vpn.ErrUnknownSignal {
 					continue
 				}
+				logger.Logf("DBUS err: %v\n", err)
 				panic(err)
 			}
 
@@ -84,4 +88,5 @@ func (v *VPNService) GetServerList() ([]string, error) {
 
 func (v *VPNService) Close() {
 	v.conn.Close()
+	close(v.statusChan)
 }
