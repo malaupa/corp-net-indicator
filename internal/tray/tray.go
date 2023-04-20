@@ -36,7 +36,6 @@ func New() *tray {
 // init tray
 func (t *tray) onReady() {
 	// set up menu
-	systray.SetIcon(assets.GetIcon(assets.ShieldOff))
 	t.statusItem = systray.AddMenuItem(i18n.L.Sprintf("Status"), i18n.L.Sprintf("Show Status"))
 	t.statusItem.SetIcon(assets.GetIcon(assets.Status))
 	t.actionItem = systray.AddMenuItem(i18n.L.Sprintf("Connect VPN"), i18n.L.Sprintf("Connect to VPN"))
@@ -52,11 +51,14 @@ func (t *tray) OpenWindow(quickConnect bool) {
 		return
 	}
 	var cmd *exec.Cmd
+	args := []string{}
 	if quickConnect {
-		cmd = exec.Command(self, "-quick")
-	} else {
-		cmd = exec.Command(self)
+		args = append(args, "-quick")
 	}
+	if logger.IsVerbose {
+		args = append(args, "-v")
+	}
+	cmd = exec.Command(self, args...)
 	cmd.Stderr = os.Stderr
 	cmd.Stdout = os.Stdout
 
@@ -64,6 +66,8 @@ func (t *tray) OpenWindow(quickConnect bool) {
 	err = cmd.Start()
 	go func() {
 		_, err := cmd.Process.Wait()
+		logger.Verbose("Waited for closing window")
+
 		if err != nil {
 			logger.Verbose(err)
 		}
@@ -128,22 +132,37 @@ func (t *tray) Run() {
 		select {
 		// handle tray menu clicks
 		case <-t.statusItem.ClickedCh:
+			logger.Verbose("Open window to connect")
+
 			t.OpenWindow(false)
 		case <-t.actionItem.ClickedCh:
 			if t.ctx.Read().Connected {
+				logger.Verbose("Try to disconnect")
+
 				t.actionItem.Disable()
-				vSer.Disconnect()
+				err := vSer.Disconnect()
+				if err != nil {
+					logger.Logf("DBUS error: %v\n", err)
+
+					t.actionItem.Enable()
+				}
 			} else {
+				logger.Verbose("Open window to quick connect")
+
 				t.OpenWindow(true)
 			}
 		// handle status updates
 		case status := <-iChan:
+			logger.Verbosef("Apply identity status: %+v\n", status)
+
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
 				ctx.IdentityInProgress = status.InProgress
 				ctx.LoggedIn = status.LoggedIn
 			})
 			t.apply(ctx)
 		case status := <-vChan:
+			logger.Verbosef("Apply vpn status: %+v\n", status)
+
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
 				ctx.VPNInProgress = status.InProgress
 				ctx.TrustedNetwork = status.TrustedNetwork
@@ -151,6 +170,8 @@ func (t *tray) Run() {
 			})
 			t.apply(ctx)
 		case <-c:
+			logger.Verbose("Received SIGINT -> closing")
+
 			t.closeWindow()
 			vSer.Close()
 			iSer.Close()

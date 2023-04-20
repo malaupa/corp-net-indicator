@@ -50,7 +50,6 @@ type VPNStatus struct {
 	Device         string
 	ConnectedAt    int64
 	CertExpiresAt  int64
-	ServerList     []string
 	InProgress     bool
 }
 

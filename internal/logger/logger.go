@@ -1,35 +1,42 @@
 package logger
 
-import "log"
+import (
+	"fmt"
+	"log"
+	"os"
+)
 
-var IsVerbose = false
+var (
+	IsVerbose = false
+	std       = log.New(os.Stderr, "", log.LstdFlags)
+)
 
 func Setup(prefix string, verbose bool) {
 	IsVerbose = verbose
-	log.SetPrefix(prefix)
+	std.SetPrefix(prefix + " ")
 	if verbose {
-		log.SetFlags(log.LstdFlags | log.Lshortfile)
+		std.SetFlags(log.LstdFlags | log.Lshortfile)
 	} else {
-		log.SetFlags(log.LstdFlags)
+		std.SetFlags(log.LstdFlags)
 	}
 }
 
-func Log(v any) {
-	log.Println(v)
+func Log(v ...any) {
+	std.Output(2, fmt.Sprintln(v...))
 }
 
 func Logf(format string, v ...any) {
-	log.Printf(format, v...)
+	std.Output(2, fmt.Sprintf(format, v...))
 }
 
-func Verbose(v any) {
+func Verbose(v ...any) {
 	if IsVerbose {
-		log.Println(v)
+		std.Output(2, fmt.Sprintln(v...))
 	}
 }
 
 func Verbosef(format string, v ...any) {
 	if IsVerbose {
-		log.Printf(format, v...)
+		std.Output(2, fmt.Sprintf(format, v...))
 	}
 }

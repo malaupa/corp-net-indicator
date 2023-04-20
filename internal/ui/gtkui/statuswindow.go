@@ -82,6 +82,8 @@ func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
 	}
 	sw.vpnDetail.Apply(status, func() {
 		if sw.quickConnect {
+			logger.Verbose("Closing window after quick connect")
+
 			sw.Close()
 		}
 	})

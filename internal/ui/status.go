@@ -82,28 +82,38 @@ func (s *Status) Run(quickConnect bool) {
 					ctx.VPNInProgress = true
 				})
 				if c != nil {
+					logger.Verbose("Open dialog to connect to VPN")
+
 					if err := vSer.Connect(c.Password, c.Server); err != nil {
-						s.handleError(err)
+						s.handleDBUSError(err)
 					}
 				} else {
+					logger.Verbose("Tray to disconnect")
+
 					if err := vSer.Disconnect(); err != nil {
-						s.handleError(err)
+						s.handleDBUSError(err)
 					}
 				}
 			case <-s.reLoginClicked:
+				logger.Verbose("Try to login to identity service")
+
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.IdentityInProgress = true
 				})
 				if err := iSer.ReLogin(); err != nil {
-					s.handleError(err)
+					s.handleDBUSError(err)
 				}
 			case status := <-iChan:
+				logger.Verbosef("Apply identity status: %+v\n", status)
+
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.IdentityInProgress = status.InProgress
 					ctx.LoggedIn = status.LoggedIn
 				})
 				go s.window.ApplyIdentityStatus(status)
 			case status := <-vChan:
+				logger.Verbosef("Apply vpn status: %+v\n", status)
+
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.VPNInProgress = status.InProgress
 					ctx.Connected = status.Connected
@@ -111,6 +121,8 @@ func (s *Status) Run(quickConnect bool) {
 				})
 				go s.window.ApplyVPNStatus(status)
 			case <-c:
+				logger.Verbose("Received SIGINT -> closing")
+
 				vSer.Close()
 				iSer.Close()
 				return
@@ -120,10 +132,14 @@ func (s *Status) Run(quickConnect bool) {
 
 	// open window
 	s.window.Open(iStatus, vStatus, servers, quickConnect)
+	logger.Verbose("Window closed")
+
 	close(c)
 }
 
-func (s *Status) handleError(err error) {
+func (s *Status) handleDBUSError(err error) {
+	logger.Logf("DBUS Error: %v\n", err)
+
 	s.ctx.Write(func(ctx *model.ContextValues) {
 		ctx.VPNInProgress = false
 		ctx.IdentityInProgress = false
