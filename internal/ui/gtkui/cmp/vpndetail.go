@@ -50,8 +50,8 @@ func NewVPNDetail(
 	vd.actionBtn.ConnectClicked(vd.OnActionClicked)
 	vd.actionSpinner = gtk.NewSpinner()
 	vd.actionSpinner.SetHAlign(gtk.AlignEnd)
-	vd.trustedNetworkImg = newStatusIcon(status.TrustedNetwork)
-	vd.connectedImg = newStatusIcon(status.Connected)
+	vd.trustedNetworkImg = NewStatusIcon(status.TrustedNetwork)
+	vd.connectedImg = NewStatusIcon(status.Connected)
 	vd.connectedAtLabel = gtk.NewLabel(util.FormatDate(status.ConnectedAt))
 	vd.ipLabel = gtk.NewLabel(util.FormatValue(status.IP))
 	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
@@ -89,8 +89,8 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		vd.trustedNetworkImg.setStatus(status.TrustedNetwork)
-		vd.connectedImg.setStatus(status.Connected)
+		vd.trustedNetworkImg.SetStatus(status.TrustedNetwork)
+		vd.connectedImg.SetStatus(status.Connected)
 		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
 		vd.deviceLabel.SetText(util.FormatValue(status.Device))
 		vd.ipLabel.SetText(util.FormatValue(status.IP))

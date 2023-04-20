@@ -16,6 +16,7 @@ const (
 	Status     Icon = "icons/activity.png"
 )
 
+// returns known icons, otherwise panics
 func GetIcon(file Icon) []byte {
 	data, err := icons.ReadFile(string(file))
 	if err != nil {

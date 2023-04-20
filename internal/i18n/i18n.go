@@ -8,9 +8,10 @@ import (
 	"golang.org/x/text/message"
 )
 
+// printer to use
 var L *message.Printer
 
-// returns printer to translate messages
+// init printer for localized messages and labels
 func init() {
 	if L == nil {
 		locale := os.Getenv("LANG")

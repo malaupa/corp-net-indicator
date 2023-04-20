@@ -27,7 +27,7 @@ func NewIdentityDetails(ctx *model.Context, reLoginClicked chan bool, status *mo
 	id.reLoginBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("ReLogin"))
 	id.reLoginBtn.SetHAlign(gtk.AlignEnd)
 	id.reLoginBtn.ConnectClicked(id.onReLoginClicked)
-	id.loggedInImg = newStatusIcon(status.LoggedIn)
+	id.loggedInImg = NewStatusIcon(status.LoggedIn)
 	id.reLoginSpinner = gtk.NewSpinner()
 	id.reLoginSpinner.SetHAlign(gtk.AlignEnd)
 	id.keepAliveAtLabel = gtk.NewLabel(util.FormatDate(status.LastKeepAliveAt))
@@ -57,7 +57,7 @@ func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 			id.reLoginBtn.SetSensitive(false)
 			return
 		}
-		id.loggedInImg.setStatus(status.LoggedIn)
+		id.loggedInImg.SetStatus(status.LoggedIn)
 		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
 		id.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
 		id.setReLoginBtn(status.LoggedIn)
@@ -83,7 +83,7 @@ func (id *IdentityDetails) setReLoginBtn(status bool) {
 func (id *IdentityDetails) setButtonAndLoginState() {
 	ctx := id.ctx.Read()
 	if !ctx.Connected && !ctx.TrustedNetwork {
-		id.loggedInImg.setStatus(false)
+		id.loggedInImg.SetStatus(false)
 		id.setReLoginBtn(false)
 	} else if !ctx.IdentityInProgress {
 		id.setReLoginBtn(true)

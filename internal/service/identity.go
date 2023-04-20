@@ -11,6 +11,7 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+// DBUS config
 const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
 const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
 
@@ -27,6 +28,7 @@ func NewIdentityService() *IdentityService {
 	return &IdentityService{conn: conn, statusChan: make(chan *model.IdentityStatus, 1)}
 }
 
+// attaches to the identity DBUS status signal and delivers them by returned channel
 func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 	logger.Verbose("Listening to identity status")
 	go func() {
@@ -58,6 +60,7 @@ func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 	return i.statusChan
 }
 
+// retrieves identity status by DBUS
 func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 	logger.Verbose("Call GetStatus")
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
@@ -69,12 +72,14 @@ func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 	return MapDbusDictToStruct(status, &model.IdentityStatus{}), nil
 }
 
+// triggers identity agent login
 func (i *IdentityService) ReLogin() error {
 	logger.Verbose("Call ReLogin")
 	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
 	return obj.ReLogin(context.Background())
 }
 
+// closes DBUS connection and signal channel
 func (i *IdentityService) Close() {
 	i.conn.Close()
 	close(i.statusChan)
