@@ -28,17 +28,27 @@ type VPNDetail struct {
 	identityDetail *IdentityDetails
 }
 
+// creates new vpn details
 func NewVPNDetail(
+	// shared context
 	context *model.Context,
+	// channel to notify connect or disconnect clicks
 	vpnActionClicked chan *model.Credentials,
+	// parent window to attach login dialog
 	parent *gtk.Window,
+	// fresh vpn status to process
 	status *model.VPNStatus,
+	// servers to list in login window
 	servers []string,
+	// identity details to set button and icon state
 	identityDetail *IdentityDetails) *VPNDetail {
-	vd := &VPNDetail{detail: *newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
 
+	vd := &VPNDetail{detail: newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
+
+	// create login dialog
 	vd.loginDialog = newLoginDialog(parent, servers)
 
+	// create action button with spinner, icons and labels
 	vd.actionBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)
 	if status.Connected {
@@ -57,6 +67,7 @@ func NewVPNDetail(
 	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
 	vd.certExpiresLabel = gtk.NewLabel(util.FormatDate(status.CertExpiresAt))
 
+	// set icons, labels and button with spinner in details box
 	vd.
 		buildBase(i18n.L.Sprintf("VPN Details")).
 		addRow(i18n.L.Sprintf("Trusted Network"), vd.trustedNetworkImg).
@@ -78,6 +89,7 @@ func NewVPNDetail(
 	return vd
 }
 
+// applies new vpn status and calls afterApply after them
 func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 	glib.IdleAdd(func() {
 		ctx := vd.ctx.Read()
@@ -99,6 +111,7 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 	})
 }
 
+// set button state after progress -> can be after status update or if error occurs
 func (vd *VPNDetail) SetButtonsAfterProgress() {
 	ctx := vd.ctx.Read()
 	vd.actionSpinner.Stop()
@@ -115,6 +128,7 @@ func (vd *VPNDetail) SetButtonsAfterProgress() {
 	vd.identityDetail.setButtonAndLoginState()
 }
 
+// is triggered on action click, triggers action according state
 func (vd *VPNDetail) OnActionClicked() {
 	if vd.ctx.Read().Connected {
 		go vd.triggerAction(nil)
@@ -129,6 +143,7 @@ func (vd *VPNDetail) OnActionClicked() {
 	}
 }
 
+// sets widget state and sends credentials over channel
 func (vd *VPNDetail) triggerAction(cred *model.Credentials) {
 	glib.IdleAdd(func() {
 		vd.actionSpinner.Start()
@@ -138,6 +153,7 @@ func (vd *VPNDetail) triggerAction(cred *model.Credentials) {
 	vd.actionClicked <- cred
 }
 
+// triggers dialog closing
 func (vd *VPNDetail) Close() {
 	vd.loginDialog.close()
 }

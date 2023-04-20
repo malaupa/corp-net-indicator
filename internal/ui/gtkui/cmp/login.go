@@ -13,10 +13,12 @@ type loginDialog struct {
 	serverList []string
 }
 
+// creates new login window handle
 func newLoginDialog(parent *gtk.Window, serverList []string) *loginDialog {
 	return &loginDialog{parent: parent, serverList: serverList}
 }
 
+// triggers dialog opening
 func (d *loginDialog) open() <-chan *model.Credentials {
 	const dialogFlags = 0 |
 		gtk.DialogDestroyWithParent |
@@ -26,6 +28,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	d.dialog = gtk.NewDialogWithFlags("", d.parent, dialogFlags)
 	d.dialog.SetResizable(false)
 
+	// create inputs/entries to collected user data
 	passwordLabel := gtk.NewLabel(i18n.L.Sprintf("Password"))
 	passwordLabel.SetHAlign(gtk.AlignStart)
 	passwordEntry := gtk.NewPasswordEntry()
@@ -43,6 +46,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	}
 	serverListEntry.SetActive(0)
 
+	// build grid to place entries
 	grid := gtk.NewGrid()
 	grid.SetColumnSpacing(10)
 	grid.SetRowSpacing(10)
@@ -57,8 +61,10 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 
 	d.dialog.SetChild(grid)
 
+	// create result channel
 	result := make(chan *model.Credentials)
 
+	// create ok action with click handler
 	okBtn := d.dialog.AddButton(i18n.L.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
 	okBtn.SetSensitive(false)
 	okBtn.AddCSSClass("suggested-action")
@@ -67,12 +73,13 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 		d.close()
 	})
 
-	// connect enter in password entry
+	// connect enter in password entry to trigger ok action
 	passwordEntry.ConnectActivate(func() {
 		if okBtn.Sensitive() {
 			okBtn.Activate()
 		}
 	})
+	// activate input validation
 	passwordEntry.ConnectChanged(func() {
 		if passwordEntry.Text() == "" {
 			okBtn.SetSensitive(false)
@@ -81,10 +88,11 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 		}
 	})
 
+	// create cancel button with handler to close dialog
 	ccBtn := d.dialog.AddButton(i18n.L.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
 	ccBtn.ConnectClicked(d.close)
 
-	// bind esc
+	// bind esc to close dialog analogous to cancel
 	esc := gtk.NewEventControllerKey()
 	esc.SetName("dialog-escape")
 	esc.ConnectKeyPressed(func(val, code uint, state gdk.ModifierType) bool {
@@ -100,11 +108,14 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	})
 	d.dialog.AddController(esc)
 
+	// show dialog
 	d.dialog.Show()
 
+	// return result channel -> credentials are given for success
 	return result
 }
 
+// closes dialog
 func (d *loginDialog) close() {
 	if d.dialog != nil {
 		d.dialog.Close()

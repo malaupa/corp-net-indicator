@@ -10,6 +10,7 @@ import (
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
+// holds all window parts
 type statusWindow struct {
 	ctx              *model.Context
 	quickConnect     bool
@@ -23,10 +24,13 @@ type statusWindow struct {
 	vpnDetail      *cmp.VPNDetail
 }
 
+// creates new status window
 func NewStatusWindow(ctx *model.Context, vpnActionClicked chan *model.Credentials, reLoginClicked chan bool) *statusWindow {
 	return &statusWindow{vpnActionClicked: vpnActionClicked, reLoginClicked: reLoginClicked, ctx: ctx}
 }
 
+// opens a new status window
+// initialization is done with given status data
 func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool) {
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
@@ -35,27 +39,34 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		sw.window.SetTitle("Corporate Network Status")
 		sw.window.SetResizable(false)
 
+		// important to get rounded bottom corners
 		headerBar := gtk.NewHeaderBar()
 		headerBar.SetShowTitleButtons(true)
 		sw.window.SetTitlebar(headerBar)
 
+		// box for holding all detail boxes
 		details := gtk.NewBox(gtk.OrientationVertical, 0)
 		details.SetMarginTop(30)
 		details.SetMarginBottom(30)
 		details.SetMarginStart(60)
 		details.SetMarginEnd(60)
 
+		// create details
 		sw.identityDetail = cmp.NewIdentityDetails(sw.ctx, sw.reLoginClicked, iStatus)
 		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, servers, sw.identityDetail)
 
+		// append all boxes
 		details.Append(sw.identityDetail)
 		details.Append(sw.vpnDetail)
 
+		// create notification and overlay for them
 		sw.notification = cmp.NewNotification()
 		overlay := gtk.NewOverlay()
+		// details are added as overlay child
 		overlay.SetChild(details)
 		overlay.AddOverlay(sw.notification.Revealer)
 
+		// show window
 		sw.window.SetChild(overlay)
 		sw.window.Show()
 
@@ -64,11 +75,13 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		}
 	})
 
+	// this call blocks until window is closed
 	if code := app.Run([]string{}); code > 0 {
 		logger.Log("Failed to open window")
 	}
 }
 
+// applies identity status
 func (sw *statusWindow) ApplyIdentityStatus(status *model.IdentityStatus) {
 	if sw.window == nil {
 		return
@@ -76,6 +89,7 @@ func (sw *statusWindow) ApplyIdentityStatus(status *model.IdentityStatus) {
 	sw.identityDetail.Apply(status)
 }
 
+// applies vpn status
 func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
 	if sw.window == nil {
 		return
@@ -89,6 +103,7 @@ func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
 	})
 }
 
+// closes window
 func (sw *statusWindow) Close() {
 	if sw.window == nil {
 		return
@@ -98,6 +113,7 @@ func (sw *statusWindow) Close() {
 	sw.window.Destroy()
 }
 
+// triggers notification to show for given error
 func (sw *statusWindow) NotifyError(err error) {
 	if sw.window == nil {
 		return

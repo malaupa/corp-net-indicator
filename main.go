@@ -18,14 +18,17 @@ func init() {
 	flag.BoolVar(&verbose, "v", false, "verbose logging")
 }
 
-// entry point
+// starts indicator
+// indicator can start as tray or window according flag value of -tray
 func main() {
 	flag.Parse()
 
 	if runAsTray {
+		// start as tray
 		logger.Setup("TRAY", verbose)
 		tray.New().Run()
 	} else {
+		// start as window
 		logger.Setup("WINDOW", verbose)
 		ui.NewStatus().Run(quickConnect)
 	}

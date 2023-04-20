@@ -13,13 +13,16 @@ type Notification struct {
 	timer    *time.Timer
 }
 
+// creates notification to show error messages
 func NewNotification() *Notification {
 	n := &Notification{}
 
+	// revealer shows and hides box with notification
 	n.Revealer = gtk.NewRevealer()
 	n.Revealer.SetHAlign(gtk.AlignCenter)
 	n.Revealer.SetVAlign(gtk.AlignStart)
 
+	// box to hold notification
 	box := gtk.NewBox(gtk.OrientationHorizontal, 20)
 	box.SetCanFocus(false)
 	box.SetVAlign(gtk.AlignStart)
@@ -28,10 +31,12 @@ func NewNotification() *Notification {
 	box.SetMarginEnd(30)
 	box.SetOpacity(0.8)
 
+	// notification itself with wrapping
 	n.text = gtk.NewLabel("")
 	n.text.SetWrap(true)
 	n.text.SetHExpand(true)
 
+	// button to close notification
 	btn := gtk.NewButtonFromIconName("window-close-symbolic")
 	btn.SetHAlign(gtk.AlignEnd)
 	btn.SetVAlign(gtk.AlignCenter)
@@ -41,6 +46,7 @@ func NewNotification() *Notification {
 		n.Revealer.SetRevealChild(false)
 	})
 
+	// build structure
 	box.Append(n.text)
 	box.Append(btn)
 	n.Revealer.SetChild(box)
@@ -48,6 +54,7 @@ func NewNotification() *Notification {
 	return n
 }
 
+// shows notification and hides them after 10s
 func (n *Notification) Show(text string) {
 	if n.timer != nil {
 		n.timer.Stop()
