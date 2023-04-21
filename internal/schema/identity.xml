@@ -1,13 +1,13 @@
 <node>
   <interface name="de.telekomMMS.identity">
+    <!-- Properties -->
+    <!-- TrustedNetwork: 0: unknown, 1: not trusted, 2: trusted -->
+    <property name="TrustedNetwork" type="u" access="read"/>
+    <!-- LoginState: 0: unknown, 1: logged out, 2: logging in, 3: logged in, 4: logging out -->
+    <property name="LoginState" type="u" access="read"/>
+    <property name="LastKeepAliveAt" type="x" access="read"/>
+    <property name="KerberosIssuedAt" type="x" access="read"/>
     <!-- Methods -->
-    <method name="GetStatus">
-      <arg type="a{sv}" name="status" direction="out"/>
-    </method>
-    <method name="ReLogin">
-    </method>
-    <signal name="StatusChange">
-      <arg type="a{sv}" name="status" direction="out"/>
-    </signal>
+    <method name="ReLogin"/>
   </interface>
 </node>
