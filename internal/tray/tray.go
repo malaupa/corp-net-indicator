@@ -112,11 +112,11 @@ func (t *tray) Run() {
 		os.Exit(1)
 	}
 	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-		ctx.VPNInProgress = vStatus.InProgress
-		ctx.IdentityInProgress = iStatus.InProgress
-		ctx.TrustedNetwork = vStatus.TrustedNetwork
-		ctx.Connected = vStatus.Connected
-		ctx.LoggedIn = iStatus.LoggedIn
+		ctx.VPNInProgress = vStatus.InProgress(ctx.VPNInProgress)
+		ctx.Connected = vStatus.IsConnected(ctx.Connected)
+		ctx.TrustedNetwork = vStatus.IsTrustedNetwork(ctx.TrustedNetwork)
+		ctx.IdentityInProgress = iStatus.InProgress(ctx.IdentityInProgress)
+		ctx.LoggedIn = iStatus.IsLoggedIn(ctx.LoggedIn)
 	})
 	t.apply(ctx)
 
@@ -156,17 +156,17 @@ func (t *tray) Run() {
 			logger.Verbosef("Apply identity status: %+v\n", status)
 
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-				ctx.IdentityInProgress = status.InProgress
-				ctx.LoggedIn = status.LoggedIn
+				ctx.IdentityInProgress = status.InProgress(ctx.IdentityInProgress)
+				ctx.LoggedIn = status.IsLoggedIn(ctx.LoggedIn)
 			})
 			t.apply(ctx)
 		case status := <-vChan:
 			logger.Verbosef("Apply vpn status: %+v\n", status)
 
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-				ctx.VPNInProgress = status.InProgress
-				ctx.TrustedNetwork = status.TrustedNetwork
-				ctx.Connected = status.Connected
+				ctx.VPNInProgress = status.InProgress(ctx.VPNInProgress)
+				ctx.Connected = status.IsConnected(ctx.Connected)
+				ctx.TrustedNetwork = status.IsTrustedNetwork(ctx.TrustedNetwork)
 			})
 			t.apply(ctx)
 		case <-c:

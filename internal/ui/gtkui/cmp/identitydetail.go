@@ -37,11 +37,11 @@ func NewIdentityDetails(
 	id.reLoginBtn.SetHAlign(gtk.AlignEnd)
 	// set click handler
 	id.reLoginBtn.ConnectClicked(id.onReLoginClicked)
-	id.loggedInImg = NewStatusIcon(status.LoggedIn)
+	id.loggedInImg = NewStatusIcon(status.IsLoggedIn(false))
 	id.reLoginSpinner = gtk.NewSpinner()
 	id.reLoginSpinner.SetHAlign(gtk.AlignEnd)
 	id.keepAliveAtLabel = gtk.NewLabel(util.FormatDate(status.LastKeepAliveAt))
-	id.krbIssuedAtLabel = gtk.NewLabel(util.FormatDate(status.KrbIssuedAt))
+	id.krbIssuedAtLabel = gtk.NewLabel(util.FormatDate(status.KerberosIssuedAt))
 
 	// build details box and attach them to the values and actions
 	id.
@@ -72,10 +72,15 @@ func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 			return
 		}
 		// set new status values
-		id.loggedInImg.SetStatus(status.LoggedIn)
-		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
-		id.krbIssuedAtLabel.SetText(util.FormatDate(status.KrbIssuedAt))
-		id.setReLoginBtn(status.LoggedIn)
+		loggedIn := status.IsLoggedIn(ctx.LoggedIn)
+		id.loggedInImg.SetStatus(loggedIn)
+		id.setReLoginBtn(loggedIn)
+		if status.LastKeepAliveAt != nil {
+			id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
+		}
+		if status.KerberosIssuedAt != nil {
+			id.krbIssuedAtLabel.SetText(util.FormatDate(status.KerberosIssuedAt))
+		}
 		// set button state
 		id.setButtonAndLoginState()
 	})

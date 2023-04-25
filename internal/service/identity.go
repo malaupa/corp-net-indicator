@@ -3,20 +3,14 @@ package service
 //go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package identity -camelize -output ../generated/identity/client/client.go ../schema/identity.xml
 
 import (
-	"context"
-
-	identity "de.telekom-mms.corp-net-indicator/internal/generated/identity/client"
 	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )
 
-// DBUS config
-const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
-const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
-
 type IdentityService struct {
-	conn       *dbus.Conn
+	dbusService
+
 	statusChan chan *model.IdentityStatus
 }
 
@@ -25,58 +19,38 @@ func NewIdentityService() *IdentityService {
 	if err != nil {
 		panic(err)
 	}
-	return &IdentityService{conn: conn, statusChan: make(chan *model.IdentityStatus, 1)}
+	return &IdentityService{
+		dbusService: dbusService{conn: conn, iface: "de.telekomMMS.identity", path: "/de/telekomMMS/identity"},
+		statusChan:  make(chan *model.IdentityStatus, 1),
+	}
 }
 
-// attaches to the identity DBUS status signal and delivers them by returned channel
+// attaches to DBUS properties changed signal, maps to status and delivers them by returned channel
 func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 	logger.Verbose("Listening to identity status")
-	go func() {
-		var sigI *identity.IdentityStatusChangeSignal = nil
-		identity.AddMatchSignal(i.conn, sigI)
-		defer identity.RemoveMatchSignal(i.conn, sigI)
-
-		c := make(chan *dbus.Signal, 1)
-		i.conn.Signal(c)
-
-		for sig := range c {
-			s, err := identity.LookupSignal(sig)
-			if err != nil {
-				if err == identity.ErrUnknownSignal {
-					continue
-				}
-				logger.Logf("DBUS error: %v\n", err)
-				panic(err)
-			}
-
-			if typed, ok := s.(*identity.IdentityStatusChangeSignal); ok {
-				select {
-				case i.statusChan <- MapDbusDictToStruct(typed.Body.Status, &model.IdentityStatus{}):
-				default:
-				}
-			}
+	i.listen(func(sig map[string]dbus.Variant) {
+		select {
+		case i.statusChan <- MapDbusDictToStruct(sig, &model.IdentityStatus{}):
+		default:
 		}
-	}()
+	})
 	return i.statusChan
 }
 
 // retrieves identity status by DBUS
 func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 	logger.Verbose("Call GetStatus")
-	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
-	status, err := obj.GetStatus(context.Background())
+	status, err := i.getStatus()
 	if err != nil {
 		return nil, err
 	}
-
 	return MapDbusDictToStruct(status, &model.IdentityStatus{}), nil
 }
 
 // triggers identity agent login
 func (i *IdentityService) ReLogin() error {
 	logger.Verbose("Call ReLogin")
-	obj := identity.NewIdentity(i.conn.Object(I_DBUS_SERVICE_NAME, I_DBUS_OBJECT_PATH))
-	return obj.ReLogin(context.Background())
+	return i.callMethod("ReLogin").Store()
 }
 
 // closes DBUS connection and signal channel

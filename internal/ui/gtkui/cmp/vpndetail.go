@@ -51,17 +51,16 @@ func NewVPNDetail(
 	// create action button with spinner, icons and labels
 	vd.actionBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)
-	if status.Connected {
+	if status.IsConnected(false) {
 		vd.actionBtn.SetLabel(i18n.L.Sprintf("Disconnect VPN"))
 	}
-	if status.TrustedNetwork {
-		vd.actionBtn.SetSensitive(false)
-	}
+	trustedNetwork := status.IsTrustedNetwork(false)
+	vd.actionBtn.SetSensitive(!trustedNetwork)
 	vd.actionBtn.ConnectClicked(vd.OnActionClicked)
 	vd.actionSpinner = gtk.NewSpinner()
 	vd.actionSpinner.SetHAlign(gtk.AlignEnd)
-	vd.trustedNetworkImg = NewStatusIcon(status.TrustedNetwork)
-	vd.connectedImg = NewStatusIcon(status.Connected)
+	vd.trustedNetworkImg = NewStatusIcon(trustedNetwork)
+	vd.connectedImg = NewStatusIcon(status.IsConnected(false))
 	vd.connectedAtLabel = gtk.NewLabel(util.FormatDate(status.ConnectedAt))
 	vd.ipLabel = gtk.NewLabel(util.FormatValue(status.IP))
 	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
@@ -101,11 +100,17 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		vd.trustedNetworkImg.SetStatus(status.TrustedNetwork)
-		vd.connectedImg.SetStatus(status.Connected)
-		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
-		vd.deviceLabel.SetText(util.FormatValue(status.Device))
-		vd.ipLabel.SetText(util.FormatValue(status.IP))
+		vd.trustedNetworkImg.SetStatus(status.IsTrustedNetwork(ctx.TrustedNetwork))
+		vd.connectedImg.SetStatus(status.IsConnected(ctx.Connected))
+		if status.ConnectedAt != nil {
+			vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
+		}
+		if status.Device != nil {
+			vd.deviceLabel.SetText(util.FormatValue(status.Device))
+		}
+		if status.IP != nil {
+			vd.ipLabel.SetText(util.FormatValue(status.IP))
+		}
 		vd.SetButtonsAfterProgress()
 		afterApply()
 	})

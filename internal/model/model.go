@@ -47,22 +47,45 @@ func (c *Context) Read() ContextValues {
 
 // identity status transmitted by DBUS
 type IdentityStatus struct {
-	TrustedNetwork  bool
-	LoggedIn        bool
-	LastKeepAliveAt int64
-	KrbIssuedAt     int64
-	InProgress      bool
+	TrustedNetwork   *uint32
+	LoginState       *uint32
+	LastKeepAliveAt  *int64
+	KerberosIssuedAt *int64
+}
+
+func (s *IdentityStatus) InProgress(ctxInProgress bool) bool {
+	return (s.LoginState != nil && (*s.LoginState == 2 || *s.LoginState == 4)) ||
+		(s.LoginState == nil && ctxInProgress)
+}
+
+func (s *IdentityStatus) IsLoggedIn(ctxIsLoggedIn bool) bool {
+	return (s.LoginState != nil && *s.LoginState == 3) ||
+		(s.LoginState == nil && ctxIsLoggedIn)
 }
 
 // vpn status transmitted by DBUS
 type VPNStatus struct {
-	TrustedNetwork bool
-	Connected      bool
-	IP             string
-	Device         string
-	ConnectedAt    int64
-	CertExpiresAt  int64
-	InProgress     bool
+	TrustedNetwork  *uint32
+	ConnectionState *uint32
+	IP              *string
+	Device          *string
+	ConnectedAt     *int64
+	CertExpiresAt   *int64
+}
+
+func (s *VPNStatus) IsTrustedNetwork(ctxTrusted bool) bool {
+	return (s.TrustedNetwork != nil && *s.TrustedNetwork == 2) ||
+		(s.TrustedNetwork == nil && ctxTrusted)
+}
+
+func (s *VPNStatus) IsConnected(ctxConnected bool) bool {
+	return (s.ConnectionState != nil && *s.ConnectionState == 3) ||
+		(s.ConnectionState == nil && ctxConnected)
+}
+
+func (s *VPNStatus) InProgress(ctxInProgress bool) bool {
+	return (s.ConnectionState != nil && (*s.ConnectionState == 2 || *s.ConnectionState == 4)) ||
+		(s.ConnectionState == nil && ctxInProgress)
 }
 
 // credentials to read on login

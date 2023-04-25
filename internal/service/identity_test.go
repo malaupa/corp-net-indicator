@@ -4,8 +4,9 @@ import (
 	"testing"
 
 	"de.telekom-mms.corp-net-indicator/internal/model"
+	testserver "de.telekom-mms.corp-net-indicator/internal/schema"
 	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/testserver"
+	"de.telekom-mms.corp-net-indicator/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -19,11 +20,10 @@ func TestGetStatus(t *testing.T) {
 	status, err := c.GetStatus()
 	assert.Nil(t, err)
 	assert.Equal(t, &model.IdentityStatus{
-		TrustedNetwork:  true,
-		LoggedIn:        false,
-		LastKeepAliveAt: 60 * 60,
-		KrbIssuedAt:     0,
-		InProgress:      false,
+		TrustedNetwork:   test.Pointer(uint32(0)),
+		LoginState:       test.Pointer(uint32(0)),
+		LastKeepAliveAt:  test.Pointer(int64(60 * 60)),
+		KerberosIssuedAt: test.Pointer(int64(0)),
 	}, status)
 }
 
@@ -44,32 +44,31 @@ func TestReLogin(t *testing.T) {
 	defer s.Close()
 
 	c := service.NewIdentityService()
+	defer c.Close()
 
 	msgs := make(chan []model.IdentityStatus, 1)
 	go func() {
 		sC := c.ListenToIdentity()
 		var results []model.IdentityStatus
+		count := 0
 		for status := range sC {
+			count++
 			results = append(results, *status)
+			if count == 2 {
+				break
+			}
 		}
 		msgs <- results
 	}()
 	assert.Nil(t, c.ReLogin())
-	c.Close()
 
 	results := <-msgs
+	assert.Equal(t, 2, len(results))
 	assert.Equal(t, model.IdentityStatus{
-		TrustedNetwork:  true,
-		LoggedIn:        false,
-		LastKeepAliveAt: 60 * 60,
-		KrbIssuedAt:     0,
-		InProgress:      true,
+		LoginState: test.Pointer(uint32(2)),
 	}, results[0])
 	assert.Equal(t, model.IdentityStatus{
-		TrustedNetwork:  true,
-		LoggedIn:        true,
-		LastKeepAliveAt: 60 * 60,
-		KrbIssuedAt:     0,
-		InProgress:      false,
+		LoginState:      test.Pointer(uint32(3)),
+		LastKeepAliveAt: test.Pointer(int64(60 * 60)),
 	}, results[1])
 }

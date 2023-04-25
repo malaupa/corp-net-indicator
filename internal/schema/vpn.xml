@@ -10,6 +10,7 @@
     <property name="IP" type="s" access="read"/>
     <property name="Device" type="s" access="read"/>
     <!-- unix timestamp in sec -->
+    <!-- TODO which value while disconnected? -->
     <property name="ConnectedAt" type="x" access="read"/>
     <!-- unix timestamp in sec -->
     <property name="CertExpiresAt" type="x" access="read"/>

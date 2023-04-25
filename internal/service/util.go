@@ -21,13 +21,21 @@ func MapDbusDictToStruct[T interface{}](payload map[string]dbus.Variant, structT
 		}
 		// get field definition
 		field := elemType.Field(i)
+		isPointer := field.Type.Kind() == reflect.Pointer
 		// check field exists in map
 		if val, ok := payload[field.Name]; ok {
 			// extract value
 			unwrapped := val.Value()
 			// set value if assignable
-			if reflect.TypeOf(unwrapped).AssignableTo(field.Type) {
-				fieldValue.Set(reflect.ValueOf(unwrapped))
+			if isPointer {
+				if reflect.TypeOf(unwrapped).AssignableTo(field.Type.Elem()) {
+					fieldValue.Set(reflect.New(field.Type.Elem()))
+					fieldValue.Elem().Set(reflect.ValueOf(unwrapped))
+				}
+			} else {
+				if reflect.TypeOf(unwrapped).AssignableTo(field.Type) {
+					fieldValue.Set(reflect.ValueOf(unwrapped))
+				}
 			}
 		}
 	}
