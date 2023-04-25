@@ -20,8 +20,8 @@ func TestGetStatus(t *testing.T) {
 	status, err := c.GetStatus()
 	assert.Nil(t, err)
 	assert.Equal(t, &model.IdentityStatus{
-		TrustedNetwork:   test.Pointer(uint32(0)),
-		LoginState:       test.Pointer(uint32(0)),
+		TrustedNetwork:   test.Pointer(model.TrustUnknown),
+		LoginState:       test.Pointer(model.LoginUnknown),
 		LastKeepAliveAt:  test.Pointer(int64(60 * 60)),
 		KerberosIssuedAt: test.Pointer(int64(0)),
 	}, status)
@@ -65,10 +65,10 @@ func TestReLogin(t *testing.T) {
 	results := <-msgs
 	assert.Equal(t, 2, len(results))
 	assert.Equal(t, model.IdentityStatus{
-		LoginState: test.Pointer(uint32(2)),
+		LoginState: test.Pointer(model.LoggingIn),
 	}, results[0])
 	assert.Equal(t, model.IdentityStatus{
-		LoginState:      test.Pointer(uint32(3)),
+		LoginState:      test.Pointer(model.LoggedIn),
 		LastKeepAliveAt: test.Pointer(int64(60 * 60)),
 	}, results[1])
 }

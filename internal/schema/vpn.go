@@ -6,6 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
@@ -24,7 +25,7 @@ func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string)
 	log.Printf("VPN: Connect called! %+v\n", struct {
 		cookie, host, connectUrl, fingerprint, resolve string
 	}{cookie, host, connectUrl, fingerprint, resolve})
-	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", uint32(2))
+	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", model.Connecting)
 	go func() {
 		var now int64 = 0
 		if a.simulate {
@@ -32,13 +33,11 @@ func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string)
 			now = time.Now().Unix()
 		}
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
-			"ConnectionState": uint32(3),
+			"ConnectionState": model.Connected,
 			"ConnectedAt":     now,
 		})
-		if iA != nil {
-			if a.simulate {
-				time.Sleep(time.Second * 5)
-			}
+		if iA != nil && a.simulate {
+			time.Sleep(time.Second * 5)
 			iA.ReLogin()
 		}
 	}()
@@ -54,21 +53,19 @@ func (a vpnAgent) Disconnect() *dbus.Error {
 		}
 	}
 	log.Printf("VPN: Disconnect called!\n")
-	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", uint32(4))
+	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", model.Disconnecting)
 	go func() {
 		if a.simulate {
 			time.Sleep(time.Second * 5)
 		}
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
-			"ConnectionState": uint32(1),
+			"ConnectionState": model.Disconnected,
 			"ConnectedAt":     0,
 		})
-		if iA != nil {
-			if a.simulate {
-				time.Sleep(time.Second * 5)
-			}
+		if iA != nil && a.simulate {
+			time.Sleep(time.Second * 5)
 			iA.props.SetMustMany(I_DBUS_SERVICE_NAME, map[string]interface{}{
-				"LoginState":      uint32(1),
+				"LoginState":      model.LoggedOut,
 				"LastKeepAliveAt": 0,
 			})
 		}
@@ -92,8 +89,8 @@ func NewVPNServer(simulate bool) *dbus.Conn {
 	// identity properties
 	a.props, err = prop.Export(conn, V_DBUS_OBJECT_PATH, prop.Map{
 		V_DBUS_SERVICE_NAME: {
-			"TrustedNetwork":  {Value: uint32(0), Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"ConnectionState": {Value: uint32(0), Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"TrustedNetwork":  {Value: model.TrustUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"ConnectionState": {Value: model.ConnectUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"IP":              {Value: "127.0.0.1", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"Device":          {Value: "vpn-tun0", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"ConnectedAt":     {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},

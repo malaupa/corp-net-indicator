@@ -4,6 +4,31 @@ import (
 	"sync"
 )
 
+// trusted state
+const (
+	TrustUnknown uint32 = iota
+	NotTrusted
+	Trusted
+)
+
+// identity agent login states
+const (
+	LoginUnknown uint32 = iota
+	LoggedOut
+	LoggingIn
+	LoggedIn
+	LoggingOut
+)
+
+// vpn connection state
+const (
+	ConnectUnknown uint32 = iota
+	Disconnected
+	Connecting
+	Connected
+	Disconnecting
+)
+
 // type to hold context values
 type ContextValues struct {
 	// is current network trusted
@@ -54,12 +79,12 @@ type IdentityStatus struct {
 }
 
 func (s *IdentityStatus) InProgress(ctxInProgress bool) bool {
-	return (s.LoginState != nil && (*s.LoginState == 2 || *s.LoginState == 4)) ||
+	return (s.LoginState != nil && (*s.LoginState == LoggingIn || *s.LoginState == LoggingOut)) ||
 		(s.LoginState == nil && ctxInProgress)
 }
 
 func (s *IdentityStatus) IsLoggedIn(ctxIsLoggedIn bool) bool {
-	return (s.LoginState != nil && *s.LoginState == 3) ||
+	return (s.LoginState != nil && *s.LoginState == LoggedIn) ||
 		(s.LoginState == nil && ctxIsLoggedIn)
 }
 
@@ -74,17 +99,17 @@ type VPNStatus struct {
 }
 
 func (s *VPNStatus) IsTrustedNetwork(ctxTrusted bool) bool {
-	return (s.TrustedNetwork != nil && *s.TrustedNetwork == 2) ||
+	return (s.TrustedNetwork != nil && *s.TrustedNetwork == Trusted) ||
 		(s.TrustedNetwork == nil && ctxTrusted)
 }
 
 func (s *VPNStatus) IsConnected(ctxConnected bool) bool {
-	return (s.ConnectionState != nil && *s.ConnectionState == 3) ||
+	return (s.ConnectionState != nil && *s.ConnectionState == Connected) ||
 		(s.ConnectionState == nil && ctxConnected)
 }
 
 func (s *VPNStatus) InProgress(ctxInProgress bool) bool {
-	return (s.ConnectionState != nil && (*s.ConnectionState == 2 || *s.ConnectionState == 4)) ||
+	return (s.ConnectionState != nil && (*s.ConnectionState == Connecting || *s.ConnectionState == Disconnecting)) ||
 		(s.ConnectionState == nil && ctxInProgress)
 }
 

@@ -20,8 +20,8 @@ func TestGetVPNStatus(t *testing.T) {
 	status, err := c.GetStatus()
 	assert.Nil(t, err)
 	assert.Equal(t, &model.VPNStatus{
-		TrustedNetwork:  test.Pointer(uint32(0)),
-		ConnectionState: test.Pointer(uint32(0)),
+		TrustedNetwork:  test.Pointer(model.TrustUnknown),
+		ConnectionState: test.Pointer(model.ConnectUnknown),
 		IP:              test.Pointer("127.0.0.1"),
 		Device:          test.Pointer("vpn-tun0"),
 		ConnectedAt:     test.Pointer(int64(0)),
@@ -80,17 +80,17 @@ func TestConnectAndDisconnect(t *testing.T) {
 	results := <-msgs
 	assert.Equal(4, len(results))
 	assert.Equal(model.VPNStatus{
-		ConnectionState: test.Pointer(uint32(2)),
+		ConnectionState: test.Pointer(model.Connecting),
 	}, results[0])
 	assert.Equal(model.VPNStatus{
-		ConnectionState: test.Pointer(uint32(3)),
+		ConnectionState: test.Pointer(model.Connected),
 		ConnectedAt:     test.Pointer(int64(0)),
 	}, results[1])
 	assert.Equal(model.VPNStatus{
-		ConnectionState: test.Pointer(uint32(4)),
+		ConnectionState: test.Pointer(model.Disconnecting),
 	}, results[2])
 	assert.Equal(model.VPNStatus{
-		ConnectionState: test.Pointer(uint32(1)),
+		ConnectionState: test.Pointer(model.Disconnected),
 		ConnectedAt:     test.Pointer(int64(0)),
 	}, results[3])
 }

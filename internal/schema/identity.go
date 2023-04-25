@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
@@ -19,7 +20,7 @@ type identityAgent struct {
 
 func (i identityAgent) ReLogin() *dbus.Error {
 	log.Println("Identity: ReLogin called!")
-	i.props.SetMust(I_DBUS_SERVICE_NAME, "LoginState", uint32(2))
+	i.props.SetMust(I_DBUS_SERVICE_NAME, "LoginState", model.LoggingIn)
 	go func() {
 		if i.simulate {
 			time.Sleep(time.Second * 3)
@@ -29,7 +30,7 @@ func (i identityAgent) ReLogin() *dbus.Error {
 			now = time.Now().Unix()
 		}
 		i.props.SetMustMany(I_DBUS_SERVICE_NAME, map[string]interface{}{
-			"LoginState":      uint32(3),
+			"LoginState":      model.LoggedIn,
 			"LastKeepAliveAt": now,
 		})
 	}()
@@ -53,8 +54,8 @@ func NewIdentityServer(simulate bool) *dbus.Conn {
 	// identity properties
 	a.props, err = prop.Export(conn, I_DBUS_OBJECT_PATH, prop.Map{
 		I_DBUS_SERVICE_NAME: {
-			"TrustedNetwork":   {Value: uint32(0), Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"LoginState":       {Value: uint32(0), Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"TrustedNetwork":   {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"LoginState":       {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"LastKeepAliveAt":  {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"KerberosIssuedAt": {Value: now - 60*60, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 		},
