@@ -1,7 +1,5 @@
 package service
 
-//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package vpn -camelize -output ../generated/vpn/client/client.go ../schema/vpn.xml
-
 import (
 	"de.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"

@@ -1,7 +1,5 @@
 package service
 
-//go:generate dbus-codegen-go -client-only -prefix de.telekomMMS -package identity -camelize -output ../generated/identity/client/client.go ../schema/identity.xml
-
 import (
 	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
