@@ -1,6 +1,7 @@
 package gtkui
 
 import (
+	"de.telekom-mms.corp-net-indicator/internal/config"
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/logger"
 	"de.telekom-mms.corp-net-indicator/internal/model"
@@ -39,9 +40,38 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		sw.window.SetTitle("Corporate Network Status")
 		sw.window.SetResizable(false)
 
+		// header menu
+		popover := gtk.NewPopover()
+		aboutBtn := gtk.NewButtonWithLabel(i18n.L.Sprintf("About"))
+		aboutBtn.ConnectClicked(func() {
+			// about dialog
+			aboutDialog := gtk.NewAboutDialog()
+			aboutDialog.SetDestroyWithParent(true)
+			aboutDialog.SetModal(true)
+			aboutDialog.SetTransientFor(&sw.window.Window)
+			aboutDialog.SetProgramName("Corporate Network Status")
+			aboutDialog.SetComments("Program to show corporate network status.")
+			aboutDialog.SetLogoIconName("applications-internet")
+			commit := config.Commit
+			if len(commit) > 11 {
+				commit = config.Commit[0:11]
+			}
+			aboutDialog.SetVersion(config.Version + " (" + commit + ")")
+			aboutDialog.SetCopyright("© 2023 The Linux Client Team")
+			aboutDialog.SetAuthors([]string{"Stefan Schubert"})
+
+			aboutDialog.Show()
+			popover.Hide()
+		})
+		popover.SetChild(aboutBtn)
+		menuBtn := gtk.NewMenuButton()
+		menuBtn.SetIconName("open-menu-symbolic")
+		menuBtn.SetPopover(popover)
+
 		// important to get rounded bottom corners
 		headerBar := gtk.NewHeaderBar()
 		headerBar.SetShowTitleButtons(true)
+		headerBar.PackEnd(menuBtn)
 		sw.window.SetTitlebar(headerBar)
 
 		// box for holding all detail boxes
