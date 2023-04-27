@@ -24,7 +24,7 @@ jobs:
         run: git fetch --force --tags
 
       - name: Install dbus and upx
-        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl
+        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl libgtk-4-dev
 
       - name: Setup Go
         # uses: magnetikonline/action-golang-cache@v4

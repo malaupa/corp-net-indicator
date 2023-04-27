@@ -41,7 +41,7 @@ jobs:
           go-version: stable
 
       - name: Install dbus and upx
-        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl
+        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl libgtk-4-dev
 
       - name: Test and Build
         uses: goreleaser/goreleaser-action@v4

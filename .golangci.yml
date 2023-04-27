@@ -4,6 +4,7 @@ linters:
   enable:
     - unconvert
     - unparam
+    - gofmt
   disable:
     - typecheck
 linters-settings:
