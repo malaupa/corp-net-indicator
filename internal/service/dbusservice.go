@@ -23,12 +23,8 @@ func (d *dbusService) listen(onSignal func(sig map[string]dbus.Variant)) {
 		panic(err)
 	}
 	go func() {
-		defer func() {
-			err := d.conn.RemoveMatchSignal(opts...)
-			if err != nil {
-				panic(err)
-			}
-		}()
+		// should not be necessary, is removed on disconnect to dbus
+		// defer d.conn.RemoveMatchSignal(opts...)
 
 		c := make(chan *dbus.Signal, 1)
 		d.conn.Signal(c)

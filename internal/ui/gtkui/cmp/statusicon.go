@@ -1,6 +1,6 @@
 package cmp
 
-import "github.com/diamondburned/gotk4/pkg/gtk/v4"
+import gtk "github.com/diamondburned/gotk4/pkg/gtk/v4"
 
 type statusIcon struct {
 	gtk.Image
