@@ -1,5 +1,3 @@
-//go:build !unit
-
 package service_test
 
 import (

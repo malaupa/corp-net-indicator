@@ -43,6 +43,9 @@ jobs:
         with:
           go-version: stable
 
+      - name: Configure dbus
+        run: cp ./policy/de.telekomMMS.vpn.conf /etc/dbus-1/system.d/ && sudo systemctl reload dbus
+
       - name: Install dbus, upx and gtk
         run: sudo apt update && sudo apt install dbus dbus-x11 upx-ucl libgtk-4-dev  libglib2.0-dev -y
 
