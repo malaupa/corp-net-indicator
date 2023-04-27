@@ -1,0 +1,52 @@
+before:
+  hooks:
+    - go mod tidy
+    - go test ./...
+    # call generate manually to not slow down release: https://github.com/golang/go/issues/49039
+    # - go generate ./...
+builds:
+  - env:
+      - CGO_ENABLED=1
+    goos:
+      - linux
+    goarch:
+      - amd64
+    id: corp-net-indicator
+    main: ./main.go
+    ldflags:
+      - -s -w -X de.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X de.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
+    hooks:
+      post:
+        - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
+archives:
+  - format: binary
+checksum:
+  name_template: "checksums.txt"
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+nfpms:
+  - package_name: corp-net-indicator
+    vendor: Deutsche Telekom MMS GmbH
+    maintainer: Stefan Schubert
+    description: |-
+      Program to show corporate network status and control identity login and vpn connection.
+    license: MIT
+    formats:
+      - deb
+    # dependencies:
+    #   - "fw-id-agent"
+    #   - "oc-daemon"
+    bindir: /usr/bin
+    section: net
+    priority: optional
+    contents:
+      - src: init/corp-net-indicator.desktop
+        dst: /etc/xdg/autostart/
+        type: config
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
