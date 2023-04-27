@@ -3,8 +3,8 @@ package cmp
 import (
 	"de.telekom-mms.corp-net-indicator/internal/i18n"
 	"de.telekom-mms.corp-net-indicator/internal/model"
-	gdk "github.com/diamondburned/gotk4/pkg/gdk/v4"
-	gtk "github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/diamondburned/gotk4/pkg/gdk/v4"
+	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type loginDialog struct {

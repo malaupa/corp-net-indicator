@@ -1,7 +1,7 @@
 package cmp
 
 import (
-	gtk "github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
 
 type detail struct {

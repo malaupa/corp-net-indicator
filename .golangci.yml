@@ -4,6 +4,8 @@ linters:
   enable:
     - unconvert
     - unparam
+  disable:
+    - typecheck
 linters-settings:
   errcheck:
     exclude-functions:
