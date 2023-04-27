@@ -38,7 +38,10 @@ func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string)
 		})
 		if iA != nil && a.simulate {
 			time.Sleep(time.Second * 5)
-			iA.ReLogin()
+			err := iA.ReLogin()
+			if err != nil {
+				log.Print(err)
+			}
 		}
 	}()
 	return nil
