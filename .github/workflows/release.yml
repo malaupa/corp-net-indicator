@@ -23,14 +23,13 @@ jobs:
       - name: Fetch Tags
         run: git fetch --force --tags
 
+      - name: Configure dbus
+        run: sudo cp ./policy/de.telekomMMS.vpn.conf /etc/dbus-1/system.d/ && sudo systemctl reload dbus
+
       - name: Install dbus, upx and gtk
         run: sudo apt update && sudo apt install dbus dbus-x11 upx-ucl libgtk-4-dev  libglib2.0-dev -y
 
       - name: Setup Go
-        # uses: magnetikonline/action-golang-cache@v4
-        # with:
-        #   go-version: stable
-        #   cache-key-suffix: ci
         uses: actions/setup-go@v4
         with:
           go-version: stable

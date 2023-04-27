@@ -35,10 +35,6 @@ jobs:
         uses: actions/checkout@v3
 
       - name: Setup Go
-        # uses: magnetikonline/action-golang-cache@v4
-        # with:
-        #   go-version: stable
-        #   cache-key-suffix: ci
         uses: actions/setup-go@v4
         with:
           go-version: stable
