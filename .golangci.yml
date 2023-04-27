@@ -6,8 +6,6 @@ linters:
     - unconvert
     - unparam
     - gofmt
-  # disable:
-  #   - typecheck
 linters-settings:
   errcheck:
     exclude-functions:

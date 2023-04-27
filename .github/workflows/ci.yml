@@ -22,7 +22,7 @@ jobs:
           go-version: stable
 
       - name: Install gtk
-        run: sudo apt-get update && sudo apt-get install libgtk-4-dev libglib2.0-dev
+        run: sudo apt update && sudo apt install libgtk-4-dev libglib2.0-dev -y
 
       - name: Lint
         uses: golangci/golangci-lint-action@v3
@@ -43,8 +43,8 @@ jobs:
         with:
           go-version: stable
 
-      - name: Install dbus and upx
-        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl libgtk-4-dev libglib2.0-dev
+      - name: Install dbus, upx and gtk
+        run: sudo apt update && sudo apt install dbus dbus-x11 upx-ucl libgtk-4-dev  libglib2.0-dev -y
 
       - name: Test and Build
         uses: goreleaser/goreleaser-action@v4

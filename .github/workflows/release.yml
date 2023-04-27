@@ -23,8 +23,8 @@ jobs:
       - name: Fetch Tags
         run: git fetch --force --tags
 
-      - name: Install dbus and upx
-        run: sudo apt-get update && sudo apt-get install dbus dbus-x11 upx-ucl libgtk-4-dev  libglib2.0-dev
+      - name: Install dbus, upx and gtk
+        run: sudo apt update && sudo apt install dbus dbus-x11 upx-ucl libgtk-4-dev  libglib2.0-dev -y
 
       - name: Setup Go
         # uses: magnetikonline/action-golang-cache@v4
