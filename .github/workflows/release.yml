@@ -8,8 +8,6 @@ on:
 
 permissions:
   contents: write
-  # packages: write
-  # issues: write
 
 jobs:
   release:
@@ -39,7 +37,7 @@ jobs:
         with:
           distribution: goreleaser
           version: latest
-          args: release --nightly --clean --timeout 60m
+          args: release --clean --timeout 60m
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
