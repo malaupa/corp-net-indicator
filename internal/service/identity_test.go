@@ -46,11 +46,13 @@ func TestReLogin(t *testing.T) {
 	c := service.NewIdentityService()
 	defer c.Close()
 
+	ready := make(chan struct{})
 	msgs := make(chan []model.IdentityStatus, 1)
 	go func() {
 		sC := c.ListenToIdentity()
 		var results []model.IdentityStatus
 		count := 0
+		close(ready)
 		for status := range sC {
 			count++
 			results = append(results, *status)
@@ -60,6 +62,7 @@ func TestReLogin(t *testing.T) {
 		}
 		msgs <- results
 	}()
+	<-ready
 	assert.Nil(t, c.ReLogin())
 
 	results := <-msgs
