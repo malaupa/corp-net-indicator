@@ -20,10 +20,11 @@ func TestGetStatus(t *testing.T) {
 	status, err := c.GetStatus()
 	assert.Nil(t, err)
 	assert.Equal(t, &model.IdentityStatus{
-		TrustedNetwork:   test.Pointer(model.TrustUnknown),
-		LoginState:       test.Pointer(model.LoginUnknown),
-		LastKeepAliveAt:  test.Pointer(int64(60 * 60)),
-		KerberosIssuedAt: test.Pointer(int64(0)),
+		TrustedNetwork:       test.Pointer(model.TrustUnknown),
+		LoginState:           test.Pointer(model.LoginUnknown),
+		LastKeepAliveAt:      test.Pointer(int64(60 * 60)),
+		KerberosTGTStartTime: test.Pointer(int64(0)),
+		KerberosTGTEndTime:   test.Pointer(int64(60 * 60)),
 	}, status)
 }
 

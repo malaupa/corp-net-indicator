@@ -39,60 +39,62 @@ func init() {
 }
 
 var messageKeyToIndex = map[string]int{
-	"Cancel":                 14,
-	"Certificate expires":    21,
-	"Connect":                13,
-	"Connect VPN":            2,
-	"Connect to VPN":         3,
-	"Connected":              17,
-	"Connected at":           18,
-	"Device":                 20,
-	"Disconnect VPN":         4,
-	"Error: [%v]":            5,
-	"IP":                     19,
-	"Identity Details":       7,
-	"Kerberos ticket issued": 10,
-	"Last Refresh":           9,
-	"Logged in":              8,
-	"Password":               11,
-	"ReLogin":                6,
-	"Server":                 12,
-	"Show Status":            1,
-	"Status":                 0,
-	"Trusted Network":        16,
-	"VPN Details":            15,
+	"About":                       5,
+	"Cancel":                      15,
+	"Certificate expires":         22,
+	"Connect":                     14,
+	"Connect VPN":                 2,
+	"Connect to VPN":              3,
+	"Connected":                   18,
+	"Connected at":                19,
+	"Device":                      21,
+	"Disconnect VPN":              4,
+	"Error: [%v]":                 6,
+	"IP":                          20,
+	"Identity Details":            8,
+	"Kerberos ticket valid until": 11,
+	"Last Refresh":                10,
+	"Logged in":                   9,
+	"Password":                    12,
+	"ReLogin":                     7,
+	"Server":                      13,
+	"Show Status":                 1,
+	"Status":                      0,
+	"Trusted Network":             17,
+	"VPN Details":                 16,
 }
 
-var deIndex = []uint32{ // 23 elements
+var deIndex = []uint32{ // 24 elements
 	0x00000000, 0x00000007, 0x00000017, 0x00000025,
-	0x0000003b, 0x00000047, 0x00000057, 0x00000064,
-	0x00000075, 0x00000080, 0x00000091, 0x000000aa,
-	0x000000b3, 0x000000ba, 0x000000c4, 0x000000ce,
-	0x000000da, 0x000000ea, 0x000000f4, 0x00000101,
-	0x00000104, 0x0000010b, 0x00000124,
-} // Size: 116 bytes
+	0x0000003b, 0x00000047, 0x0000004d, 0x0000005d,
+	0x0000006a, 0x0000007b, 0x00000086, 0x00000097,
+	0x000000b3, 0x000000bc, 0x000000c3, 0x000000cd,
+	0x000000d7, 0x000000e3, 0x000000f3, 0x000000fd,
+	0x0000010a, 0x0000010d, 0x00000114, 0x0000012d,
+} // Size: 120 bytes
 
-const deData string = "" + // Size: 292 bytes
+const deData string = "" + // Size: 301 bytes
 	"\x02Status\x02Status anzeigen\x02VPN verbinden\x02Mit dem VPN verbinden" +
-	"\x02VPN trennen\x02Fehler: [%[1]v]\x02Neu anmelden\x02Identity Details" +
-	"\x02Angemeldet\x02Letzte Anmeldung\x02Kerberos Ticket erhalten\x02Passwo" +
-	"rt\x02Server\x02Verbinden\x02Abbrechen\x02VPN Details\x02Trusted Network" +
-	"\x02Verbunden\x02Verbunden am\x02IP\x02Gerät\x02Zertifikat läuft aus am"
+	"\x02VPN trennen\x02Über\x02Fehler: [%[1]v]\x02Neu anmelden\x02Identity D" +
+	"etails\x02Angemeldet\x02Letzte Anmeldung\x02Kerberos Ticket gültig bis" +
+	"\x02Passwort\x02Server\x02Verbinden\x02Abbrechen\x02VPN Details\x02Trust" +
+	"ed Network\x02Verbunden\x02Verbunden am\x02IP\x02Gerät\x02Zertifikat läu" +
+	"ft aus am"
 
-var enIndex = []uint32{ // 23 elements
+var enIndex = []uint32{ // 24 elements
 	0x00000000, 0x00000007, 0x00000013, 0x0000001f,
-	0x0000002e, 0x0000003d, 0x0000004c, 0x00000054,
-	0x00000065, 0x0000006f, 0x0000007c, 0x00000093,
-	0x0000009c, 0x000000a3, 0x000000ab, 0x000000b2,
-	0x000000be, 0x000000ce, 0x000000d8, 0x000000e5,
-	0x000000e8, 0x000000ef, 0x00000103,
-} // Size: 116 bytes
+	0x0000002e, 0x0000003d, 0x00000043, 0x00000052,
+	0x0000005a, 0x0000006b, 0x00000075, 0x00000082,
+	0x0000009e, 0x000000a7, 0x000000ae, 0x000000b6,
+	0x000000bd, 0x000000c9, 0x000000d9, 0x000000e3,
+	0x000000f0, 0x000000f3, 0x000000fa, 0x0000010e,
+} // Size: 120 bytes
 
-const enData string = "" + // Size: 259 bytes
+const enData string = "" + // Size: 270 bytes
 	"\x02Status\x02Show Status\x02Connect VPN\x02Connect to VPN\x02Disconnect" +
-	" VPN\x02Error: [%[1]v]\x02ReLogin\x02Identity Details\x02Logged in\x02La" +
-	"st Refresh\x02Kerberos ticket issued\x02Password\x02Server\x02Connect" +
-	"\x02Cancel\x02VPN Details\x02Trusted Network\x02Connected\x02Connected a" +
-	"t\x02IP\x02Device\x02Certificate expires"
+	" VPN\x02About\x02Error: [%[1]v]\x02ReLogin\x02Identity Details\x02Logged" +
+	" in\x02Last Refresh\x02Kerberos ticket valid until\x02Password\x02Server" +
+	"\x02Connect\x02Cancel\x02VPN Details\x02Trusted Network\x02Connected\x02" +
+	"Connected at\x02IP\x02Device\x02Certificate expires"
 
-	// Total table size 783 bytes (0KiB); checksum: 18EBB379
+	// Total table size 811 bytes (0KiB); checksum: 70EA1076

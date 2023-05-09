@@ -37,6 +37,13 @@
             "fuzzy": true
         },
         {
+            "id": "About",
+            "message": "About",
+            "translation": "About",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "Error: [{Err}]",
             "message": "Error: [{Err}]",
             "translation": "Error: [{Err}]",
@@ -82,9 +89,9 @@
             "fuzzy": true
         },
         {
-            "id": "Kerberos ticket issued",
-            "message": "Kerberos ticket issued",
-            "translation": "Kerberos ticket issued",
+            "id": "Kerberos ticket valid until",
+            "message": "Kerberos ticket valid until",
+            "translation": "Kerberos ticket valid until",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },

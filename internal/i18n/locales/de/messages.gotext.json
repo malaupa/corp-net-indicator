@@ -27,9 +27,9 @@
             "translation": "VPN trennen"
         },
         {
-            "id": "Corporate Network Status",
-            "message": "Corporate Network Status",
-            "translation": ""
+            "id": "About",
+            "message": "About",
+            "translation": "Über"
         },
         {
             "id": "Error: [{Err}]",
@@ -67,9 +67,9 @@
             "translation": "Letzte Anmeldung"
         },
         {
-            "id": "Kerberos ticket issued",
-            "message": "Kerberos ticket issued",
-            "translation": "Kerberos Ticket erhalten"
+            "id": "Kerberos ticket valid until",
+            "message": "Kerberos ticket valid until",
+            "translation": "Kerberos Ticket gültig bis"
         },
         {
             "id": "Password",

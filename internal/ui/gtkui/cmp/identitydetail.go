@@ -16,7 +16,7 @@ type IdentityDetails struct {
 
 	loggedInImg      *statusIcon
 	keepAliveAtLabel *gtk.Label
-	krbIssuedAtLabel *gtk.Label
+	krbEndTimeLabel  *gtk.Label
 	reLoginBtn       *gtk.Button
 	reLoginSpinner   *gtk.Spinner
 }
@@ -41,14 +41,14 @@ func NewIdentityDetails(
 	id.reLoginSpinner = gtk.NewSpinner()
 	id.reLoginSpinner.SetHAlign(gtk.AlignEnd)
 	id.keepAliveAtLabel = gtk.NewLabel(util.FormatDate(status.LastKeepAliveAt))
-	id.krbIssuedAtLabel = gtk.NewLabel(util.FormatDate(status.KerberosIssuedAt))
+	id.krbEndTimeLabel = gtk.NewLabel(util.FormatDate(status.KerberosTGTEndTime))
 
 	// build details box and attach them to the values and actions
 	id.
 		buildBase(i18n.L.Sprintf("Identity Details")).
 		addRow(i18n.L.Sprintf("Logged in"), id.reLoginSpinner, id.reLoginBtn, id.loggedInImg).
 		addRow(i18n.L.Sprintf("Last Refresh"), id.keepAliveAtLabel).
-		addRow(i18n.L.Sprintf("Kerberos ticket issued"), id.krbIssuedAtLabel)
+		addRow(i18n.L.Sprintf("Kerberos ticket valid until"), id.krbEndTimeLabel)
 
 	// set progress if needed
 	if ctx.Read().IdentityInProgress {
@@ -78,8 +78,8 @@ func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 		if status.LastKeepAliveAt != nil {
 			id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
 		}
-		if status.KerberosIssuedAt != nil {
-			id.krbIssuedAtLabel.SetText(util.FormatDate(status.KerberosIssuedAt))
+		if status.KerberosTGTEndTime != nil {
+			id.krbEndTimeLabel.SetText(util.FormatDate(status.KerberosTGTEndTime))
 		}
 		// set button state
 		id.setButtonAndLoginState()

@@ -9,8 +9,7 @@
     <property name="TrustedNetwork" type="u" access="read"/>
     <property name="IP" type="s" access="read"/>
     <property name="Device" type="s" access="read"/>
-    <!-- unix timestamp in sec -->
-    <!-- TODO which value while disconnected? -->
+    <!-- unix timestamp in sec, -1 on disconnect -->
     <property name="ConnectedAt" type="x" access="read"/>
     <!-- runtime connection config -->
     <property name="Servers" type="as" access="read"/>

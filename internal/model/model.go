@@ -72,10 +72,11 @@ func (c *Context) Read() ContextValues {
 
 // identity status transmitted by DBUS
 type IdentityStatus struct {
-	TrustedNetwork   *uint32
-	LoginState       *uint32
-	LastKeepAliveAt  *int64
-	KerberosIssuedAt *int64
+	TrustedNetwork       *uint32
+	LoginState           *uint32
+	LastKeepAliveAt      *int64
+	KerberosTGTStartTime *int64
+	KerberosTGTEndTime   *int64
 }
 
 func (s *IdentityStatus) InProgress(ctxInProgress bool) bool {

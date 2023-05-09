@@ -54,10 +54,11 @@ func NewIdentityServer(simulate bool) *dbus.Conn {
 	// identity properties
 	a.props, err = prop.Export(conn, I_DBUS_OBJECT_PATH, prop.Map{
 		I_DBUS_SERVICE_NAME: {
-			"TrustedNetwork":   {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"LoginState":       {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"LastKeepAliveAt":  {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"KerberosIssuedAt": {Value: now - 60*60, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"TrustedNetwork":       {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"LoginState":           {Value: model.LoginUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"LastKeepAliveAt":      {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"KerberosTGTStartTime": {Value: now - 60*60, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"KerberosTGTEndTime":   {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 		},
 	})
 	if err != nil {
