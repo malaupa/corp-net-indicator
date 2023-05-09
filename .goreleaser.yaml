@@ -19,7 +19,7 @@ builds:
       post:
         - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
 archives:
-  - format: binary
+  - format: tar.gz
 checksum:
   name_template: "checksums.txt"
 snapshot:
