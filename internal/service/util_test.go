@@ -3,8 +3,8 @@ package service_test
 import (
 	"testing"
 
-	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/test"
+	"com.telekom-mms.corp-net-indicator/internal/service"
+	"com.telekom-mms.corp-net-indicator/internal/test"
 	"github.com/godbus/dbus/v5"
 	"github.com/stretchr/testify/assert"
 )

@@ -3,10 +3,10 @@ package ui
 import (
 	"os"
 
-	"de.telekom-mms.corp-net-indicator/internal/logger"
-	"de.telekom-mms.corp-net-indicator/internal/model"
-	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui"
+	"com.telekom-mms.corp-net-indicator/internal/logger"
+	"com.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/service"
+	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui"
 )
 
 // minimal interface to interact with an ui implementation

@@ -1,4 +1,4 @@
-module de.telekom-mms.corp-net-indicator
+module com.telekom-mms.corp-net-indicator
 
 go 1.20
 

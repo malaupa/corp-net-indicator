@@ -3,7 +3,7 @@ package assets_test
 import (
 	"testing"
 
-	"de.telekom-mms.corp-net-indicator/internal/assets"
+	"com.telekom-mms.corp-net-indicator/internal/assets"
 	"github.com/stretchr/testify/assert"
 )
 

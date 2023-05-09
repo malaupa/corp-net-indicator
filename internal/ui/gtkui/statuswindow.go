@@ -1,11 +1,11 @@
 package gtkui
 
 import (
-	"de.telekom-mms.corp-net-indicator/internal/config"
-	"de.telekom-mms.corp-net-indicator/internal/i18n"
-	"de.telekom-mms.corp-net-indicator/internal/logger"
-	"de.telekom-mms.corp-net-indicator/internal/model"
-	"de.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
+	"com.telekom-mms.corp-net-indicator/internal/config"
+	"com.telekom-mms.corp-net-indicator/internal/i18n"
+	"com.telekom-mms.corp-net-indicator/internal/logger"
+	"com.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -34,7 +34,7 @@ func NewStatusWindow(ctx *model.Context, vpnActionClicked chan *model.Credential
 // initialization is done with given status data
 func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool) {
 	sw.quickConnect = quickConnect
-	app := gtk.NewApplication("de.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
+	app := gtk.NewApplication("com.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
 		sw.window = gtk.NewApplicationWindow(app)
 		sw.window.SetTitle("Corporate Network Status")
@@ -71,6 +71,10 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		// important to get rounded bottom corners
 		headerBar := gtk.NewHeaderBar()
 		headerBar.SetShowTitleButtons(true)
+		icon := gtk.NewButtonFromIconName("applications-internet")
+		icon.SetCanFocus(false)
+		icon.SetCanTarget(false)
+		headerBar.PackStart(icon)
 		headerBar.PackEnd(menuBtn)
 		sw.window.SetTitlebar(headerBar)
 

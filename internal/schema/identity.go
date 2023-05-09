@@ -5,14 +5,14 @@ import (
 	"log"
 	"time"
 
-	"de.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 )
 
-const I_DBUS_SERVICE_NAME = "de.telekomMMS.identity"
-const I_DBUS_OBJECT_PATH = "/de/telekomMMS/identity"
+const I_DBUS_SERVICE_NAME = "com.telekom_mms.fw_id_agent.Agent"
+const I_DBUS_OBJECT_PATH = "/com/telekom_mms/fw_id_agent/Agent"
 
 type identityAgent struct {
 	agent

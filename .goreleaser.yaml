@@ -14,7 +14,7 @@ builds:
     id: corp-net-indicator
     main: ./main.go
     ldflags:
-      - -s -w -X de.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X de.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
+      - -s -w -X com.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X com.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
     hooks:
       post:
         - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'

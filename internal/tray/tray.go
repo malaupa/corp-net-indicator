@@ -5,11 +5,11 @@ import (
 	"os/exec"
 	"os/signal"
 
-	"de.telekom-mms.corp-net-indicator/internal/assets"
-	"de.telekom-mms.corp-net-indicator/internal/i18n"
-	"de.telekom-mms.corp-net-indicator/internal/logger"
-	"de.telekom-mms.corp-net-indicator/internal/model"
-	"de.telekom-mms.corp-net-indicator/internal/service"
+	"com.telekom-mms.corp-net-indicator/internal/assets"
+	"com.telekom-mms.corp-net-indicator/internal/i18n"
+	"com.telekom-mms.corp-net-indicator/internal/logger"
+	"com.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/service"
 	"github.com/slytomcat/systray"
 )
 

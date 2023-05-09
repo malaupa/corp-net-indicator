@@ -1,7 +1,7 @@
 package service
 
 import (
-	"de.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -17,7 +17,7 @@ func NewVPNService() *VPNService {
 		panic(err)
 	}
 	return &VPNService{
-		dbusService: dbusService{conn: conn, iface: "de.telekomMMS.vpn", path: "/de/telekomMMS/vpn"},
+		dbusService: dbusService{conn: conn, iface: "com.telekom_mms.oc_daemon.Daemon", path: "/com/telekom_mms/oc_daemon/Daemon"},
 		statusChan:  make(chan *model.VPNStatus, 1),
 	}
 }

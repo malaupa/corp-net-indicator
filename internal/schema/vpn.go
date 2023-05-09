@@ -6,14 +6,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	"de.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 )
 
-const V_DBUS_SERVICE_NAME = "de.telekomMMS.vpn"
-const V_DBUS_OBJECT_PATH = "/de/telekomMMS/vpn"
+const V_DBUS_SERVICE_NAME = "com.telekom_mms.oc_daemon.Daemon"
+const V_DBUS_OBJECT_PATH = "/com/telekom_mms/oc_daemon/Daemon"
 
 type vpnAgent struct {
 	agent

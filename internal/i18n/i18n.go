@@ -1,6 +1,6 @@
 package i18n
 
-//go:generate gotext -srclang=en -dir=locales update -out=catalog.go -lang=en,de de.telekom-mms.corp-net-indicator
+//go:generate gotext -srclang=en -dir=locales update -out=catalog.go -lang=en,de com.telekom-mms.corp-net-indicator
 
 import (
 	"os"

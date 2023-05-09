@@ -1,5 +1,5 @@
 <node>
-  <interface name="de.telekomMMS.vpn">
+  <interface name="com.telekom_mms.oc_daemon.Daemon">
     <!-- Properties -->
     <!-- ConnectionState: 0: unknown, 1: disconnected, 2: connecting, 3: connected, 4: disconnecting -->
     <!-- Good Case: 0 -> 1 -> 2 -> 3 -> 4 -> 1 -->
@@ -12,8 +12,6 @@
     <!-- unix timestamp in sec -->
     <!-- TODO which value while disconnected? -->
     <property name="ConnectedAt" type="x" access="read"/>
-    <!-- unix timestamp in sec -->
-    <property name="CertExpiresAt" type="x" access="read"/>
     <!-- runtime connection config -->
     <property name="Servers" type="as" access="read"/>
     <!-- Methods -->

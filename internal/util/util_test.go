@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"de.telekom-mms.corp-net-indicator/internal/test"
-	"de.telekom-mms.corp-net-indicator/internal/util"
+	"com.telekom-mms.corp-net-indicator/internal/test"
+	"com.telekom-mms.corp-net-indicator/internal/util"
 	"github.com/stretchr/testify/assert"
 )
 

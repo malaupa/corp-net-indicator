@@ -3,10 +3,10 @@ package service_test
 import (
 	"testing"
 
-	"de.telekom-mms.corp-net-indicator/internal/model"
-	testserver "de.telekom-mms.corp-net-indicator/internal/schema"
-	"de.telekom-mms.corp-net-indicator/internal/service"
-	"de.telekom-mms.corp-net-indicator/internal/test"
+	"com.telekom-mms.corp-net-indicator/internal/model"
+	testserver "com.telekom-mms.corp-net-indicator/internal/schema"
+	"com.telekom-mms.corp-net-indicator/internal/service"
+	"com.telekom-mms.corp-net-indicator/internal/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -37,7 +37,7 @@ func TestGetVPNStatusError(t *testing.T) {
 	s.Close()
 
 	status, err := c.GetStatus()
-	assert.EqualError(t, err, "The name de.telekomMMS.vpn was not provided by any .service files")
+	assert.EqualError(t, err, "The name com.telekom_mms.oc_daemon.Daemon was not provided by any .service files")
 	assert.Nil(t, status)
 }
 

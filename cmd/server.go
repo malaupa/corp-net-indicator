@@ -1,6 +1,6 @@
 package main
 
-import testserver "de.telekom-mms.corp-net-indicator/internal/schema"
+import testserver "com.telekom-mms.corp-net-indicator/internal/schema"
 
 func main() {
 	iS := testserver.NewIdentityServer(true)

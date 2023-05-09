@@ -1,8 +1,8 @@
 package service
 
 import (
-	"de.telekom-mms.corp-net-indicator/internal/logger"
-	"de.telekom-mms.corp-net-indicator/internal/model"
+	"com.telekom-mms.corp-net-indicator/internal/logger"
+	"com.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -18,7 +18,7 @@ func NewIdentityService() *IdentityService {
 		panic(err)
 	}
 	return &IdentityService{
-		dbusService: dbusService{conn: conn, iface: "de.telekomMMS.identity", path: "/de/telekomMMS/identity"},
+		dbusService: dbusService{conn: conn, iface: "com.telekom_mms.fw_id_agent.Agent", path: "/com/telekom_mms/fw_id_agent/Agent"},
 		statusChan:  make(chan *model.IdentityStatus, 1),
 	}
 }

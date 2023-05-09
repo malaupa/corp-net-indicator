@@ -3,9 +3,9 @@ package main
 import (
 	"flag"
 
-	"de.telekom-mms.corp-net-indicator/internal/logger"
-	"de.telekom-mms.corp-net-indicator/internal/tray"
-	"de.telekom-mms.corp-net-indicator/internal/ui"
+	"com.telekom-mms.corp-net-indicator/internal/logger"
+	"com.telekom-mms.corp-net-indicator/internal/tray"
+	"com.telekom-mms.corp-net-indicator/internal/ui"
 )
 
 var runAsTray bool
