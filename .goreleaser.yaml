@@ -13,6 +13,7 @@ builds:
       - amd64
     id: corp-net-indicator
     main: ./main.go
+    buildmode: pie
     ldflags:
       - -s -w -X com.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X com.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
     hooks:
@@ -32,10 +33,12 @@ changelog:
       - "^test:"
 nfpms:
   - package_name: corp-net-indicator
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
     vendor: Deutsche Telekom MMS GmbH
-    maintainer: Stefan Schubert
+    maintainer: The MMS Linux Dev Team <mmslinux-dev@telekom.de>
     description: |-
-      Program to show corporate network status and control identity login and vpn connection.
+      Corporate Network Status
+      Program to show network status and controls identity login and vpn connection.
     license: MIT
     formats:
       - deb
@@ -45,10 +48,34 @@ nfpms:
     bindir: /usr/bin
     section: net
     priority: optional
+    # currently buggy -> ignores in lintian-overrides
+    # chglog init -> generates changelog.yml
+    # chglog add --version v#.#.# -> after every tag, call in hook above?
+    # changelog: "changelog.yml"
+    dependencies:
+      - "libc6"
+      - "libcairo-gobject"
+      - "libcairo"
+      - "libgdk-pixbuf-2.0"
+      - "libgio-2.0"
+      - "libglib-2.0"
+      - "libgobject-2.0"
+      - "libgraphene-1.0"
+      - "libgtk-4"
+      - "libpango-1.0"
     contents:
       - src: init/corp-net-indicator.desktop
         dst: /etc/xdg/autostart/
         type: config
+      - src: copyright
+        dst: /usr/share/doc/corp-net-indicator/
+        file_info:
+          mode: 0644
+      - src: lintian-overrides
+        dst: ./usr/share/lintian/overrides/corp-net-indicator
+        packager: deb
+        file_info:
+          mode: 0644
 release:
   prerelease: auto
 # yaml-language-server: $schema=https://goreleaser.com/static/schema.json

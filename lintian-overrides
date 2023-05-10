@@ -1,0 +1,4 @@
+corp-net-indicator: statically-linked-binary
+corp-net-indicator: changelog-file-missing-in-native-package
+corp-net-indicator: no-manual-page
+corp-net-indicator: shared-library-lacks-prerequisites

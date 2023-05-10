@@ -57,7 +57,7 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 				commit = config.Commit[0:11]
 			}
 			aboutDialog.SetVersion(config.Version + " (" + commit + ")")
-			aboutDialog.SetCopyright("© 2023 The Linux Client Team")
+			aboutDialog.SetCopyright("© 2023 The MMS Linux Dev Team")
 			aboutDialog.SetAuthors([]string{"Stefan Schubert"})
 
 			aboutDialog.Show()
