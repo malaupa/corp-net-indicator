@@ -47,11 +47,19 @@ nfpms:
     #   - "oc-daemon"
     bindir: /usr/bin
     section: net
+    # important: this makes the package non native
+    release: "1"
     priority: optional
-    # currently buggy -> ignores in lintian-overrides
     # chglog init -> generates changelog.yml
     # chglog add --version v#.#.# -> after every tag, call in hook above?
+    # activate if https://github.com/goreleaser/nfpm/pull/656 is merged and used in goreleaser
+    # -> remove overrides
     # changelog: "changelog.yml"
+    deb:
+      lintian_overrides:
+        - "changelog-file-missing-in-native-package"
+        - "no-manual-page"
+        - "shared-library-lacks-prerequisites"
     dependencies:
       - "libc6"
       - "libcairo-gobject"
@@ -69,11 +77,6 @@ nfpms:
         type: config
       - src: copyright
         dst: /usr/share/doc/corp-net-indicator/
-        file_info:
-          mode: 0644
-      - src: lintian-overrides
-        dst: ./usr/share/lintian/overrides/corp-net-indicator
-        packager: deb
         file_info:
           mode: 0644
 release:
