@@ -35,7 +35,7 @@ nfpms:
   - package_name: corp-net-indicator
     file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
     vendor: Deutsche Telekom MMS GmbH
-    maintainer: The MMS Linux Dev Team <mmslinux-dev@telekom.de>
+    maintainer: The MMS Linux Dev Team <mmslinux-dev@t-systems-mms.com>
     description: |-
       Corporate Network Status
       Program to show network status and controls identity login and vpn connection.
