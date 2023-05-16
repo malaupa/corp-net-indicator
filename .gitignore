@@ -15,4 +15,7 @@
 # vendor/
 
 dist/
-main
+/main
+/log
+/server_log
+/start.sh

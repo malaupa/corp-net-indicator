@@ -23,6 +23,8 @@ type tray struct {
 
 	window    *os.Process
 	closeChan chan struct{}
+
+	windowInitiallyOpened bool
 }
 
 // starts tray
@@ -100,6 +102,7 @@ func (t *tray) Run() {
 	// create services
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
+	wSer := service.NewWatcher()
 	// update tray
 	vStatus, err := vSer.GetStatus()
 	if err != nil {
@@ -119,10 +122,15 @@ func (t *tray) Run() {
 		ctx.LoggedIn = iStatus.IsLoggedIn(ctx.LoggedIn)
 	})
 	t.apply(ctx)
+	// open window initially, if needed
+	t.windowInitiallyOpened = t.openWindowIfNeeded(vStatus)
 
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
 	iChan := iSer.ListenToIdentity()
+
+	// catch user login
+	wChan := wSer.Listen()
 
 	// catch interrupt and clean up
 	c := make(chan os.Signal, 1)
@@ -169,12 +177,25 @@ func (t *tray) Run() {
 				ctx.TrustedNetwork = status.IsTrustedNetwork(ctx.TrustedNetwork)
 			})
 			t.apply(ctx)
+			// open window, if needed
+			if !t.windowInitiallyOpened {
+				t.windowInitiallyOpened = t.openWindowIfNeeded(vStatus)
+			}
+		case <-wChan:
+			logger.Verbose("Watcher signal received")
+			status, err := vSer.GetStatus()
+			if err != nil {
+				logger.Logf("DBUS error: %v\n", err)
+				os.Exit(1)
+			}
+			t.openWindowIfNeeded(status)
 		case <-c:
 			logger.Verbose("Received SIGINT -> closing")
 
 			t.closeWindow()
 			vSer.Close()
 			iSer.Close()
+			wSer.Close()
 			t.quitSystray()
 			return
 		}
@@ -211,4 +232,14 @@ func (t *tray) apply(ctx model.ContextValues) {
 			t.actionItem.Show()
 		}
 	}
+}
+
+// opens window if needed
+func (t *tray) openWindowIfNeeded(status *model.VPNStatus) bool {
+	if status.TrustedNetwork != nil && *status.TrustedNetwork == model.NotTrusted &&
+		status.ConnectionState != nil && *status.ConnectionState <= model.Disconnected {
+		t.OpenWindow(true)
+		return true
+	}
+	return false
 }

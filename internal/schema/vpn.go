@@ -92,7 +92,7 @@ func NewVPNServer(simulate bool) *dbus.Conn {
 	// identity properties
 	a.props, err = prop.Export(conn, V_DBUS_OBJECT_PATH, prop.Map{
 		V_DBUS_SERVICE_NAME: {
-			"TrustedNetwork":  {Value: model.TrustUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"TrustedNetwork":  {Value: model.NotTrusted, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"ConnectionState": {Value: model.ConnectUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"IP":              {Value: "127.0.0.1", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"Device":          {Value: "vpn-tun0", Writable: false, Emit: prop.EmitTrue, Callback: nil},

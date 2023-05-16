@@ -37,7 +37,6 @@ func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 
 // retrieves identity status by DBUS
 func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
-	logger.Verbose("Call GetStatus")
 	status, err := i.getStatus()
 	if err != nil {
 		return nil, err
@@ -47,7 +46,6 @@ func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
 
 // triggers identity agent login
 func (i *IdentityService) ReLogin() error {
-	logger.Verbose("Call ReLogin")
 	return i.callMethod("ReLogin").Store()
 }
 
@@ -55,5 +53,4 @@ func (i *IdentityService) ReLogin() error {
 func (i *IdentityService) Close() {
 	i.conn.Close()
 	close(i.statusChan)
-	logger.Verbose("Service closed")
 }
