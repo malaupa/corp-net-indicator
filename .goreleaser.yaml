@@ -16,9 +16,9 @@ builds:
     buildmode: pie
     ldflags:
       - -s -w -X com.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X com.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
-    # hooks:
-    #   post:
-    #     - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
+    hooks:
+      post:
+        - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
 archives:
   - format: tar.gz
     rlcp: true
