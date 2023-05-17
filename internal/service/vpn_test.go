@@ -20,7 +20,7 @@ func TestGetVPNStatus(t *testing.T) {
 	status, err := c.GetStatus()
 	assert.Nil(t, err)
 	assert.Equal(t, &model.VPNStatus{
-		TrustedNetwork:  test.Pointer(model.TrustUnknown),
+		TrustedNetwork:  test.Pointer(model.NotTrusted),
 		ConnectionState: test.Pointer(model.ConnectUnknown),
 		IP:              test.Pointer("127.0.0.1"),
 		Device:          test.Pointer("vpn-tun0"),

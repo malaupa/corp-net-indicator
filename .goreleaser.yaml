@@ -16,11 +16,20 @@ builds:
     buildmode: pie
     ldflags:
       - -s -w -X com.telekom-mms.corp-net-indicator/internal/config.Version={{.Version}} -X com.telekom-mms.corp-net-indicator/internal/config.Commit={{.Commit}}
-    hooks:
-      post:
-        - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
+    # hooks:
+    #   post:
+    #     - '/usr/bin/bash -c "set -ex; /usr/bin/upx dist/corp*/corp*"'
 archives:
   - format: tar.gz
+    rlcp: true
+    wrap_in_directory: true
+    files:
+      - src: init/corp-net-indicator.service
+        dst: corp-net-indicator.service
+        info:
+          mode: 0644
+      - README.md
+      - LICENSE
 checksum:
   name_template: "checksums.txt"
 snapshot:
@@ -42,9 +51,6 @@ nfpms:
     license: MIT
     formats:
       - deb
-    # dependencies:
-    #   - "fw-id-agent"
-    #   - "oc-daemon"
     bindir: /usr/bin
     section: net
     # important: this makes the package non native
@@ -55,6 +61,10 @@ nfpms:
     # activate if https://github.com/goreleaser/nfpm/pull/656 is merged and used in goreleaser
     # -> remove overrides
     # changelog: "changelog.yml"
+    scripts:
+      postinstall: build/package/postinstall.sh
+      preremove: build/package/preremove.sh
+      postremove: build/package/postremove.sh
     deb:
       lintian_overrides:
         - "changelog-file-missing-in-native-package"
@@ -62,19 +72,24 @@ nfpms:
         - "shared-library-lacks-prerequisites"
     dependencies:
       - "libc6"
-      - "libcairo-gobject"
-      - "libcairo"
-      - "libgdk-pixbuf-2.0"
-      - "libgio-2.0"
-      - "libglib-2.0"
-      - "libgobject-2.0"
-      - "libgraphene-1.0"
-      - "libgtk-4"
-      - "libpango-1.0"
+      - "libcairo2"
+      - "libcairo-gobject2"
+      - "libgdk-pixbuf-2.0-0"
+      - "libglib2.0-0"
+      - "libgraphene-1.0-0"
+      - "libgtk-4-1"
+      - "libpango-1.0-0"
+    #   - "fw-id-agent"
+    #   - "oc-daemon"
     contents:
       - src: init/corp-net-indicator.desktop
-        dst: /etc/xdg/autostart/
-        type: config
+        dst: /usr/share/applications/
+        file_info:
+          mode: 0644
+      - src: init/corp-net-indicator.service
+        dst: /usr/lib/systemd/user/
+        file_info:
+          mode: 0644
       - src: copyright
         dst: /usr/share/doc/corp-net-indicator/
         file_info:
