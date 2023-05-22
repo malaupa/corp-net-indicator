@@ -6,6 +6,11 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+const (
+	IDENTITY_IFACE = "com.telekom_mms.fw_id_agent.Agent"
+	IDENTITY_PATH  = "/com/telekom_mms/fw_id_agent/Agent"
+)
+
 type IdentityService struct {
 	dbusService
 
@@ -18,8 +23,8 @@ func NewIdentityService() *IdentityService {
 		panic(err)
 	}
 	return &IdentityService{
-		dbusService: dbusService{conn: conn, iface: "com.telekom_mms.fw_id_agent.Agent", path: "/com/telekom_mms/fw_id_agent/Agent"},
-		statusChan:  make(chan *model.IdentityStatus, 1),
+		dbusService: dbusService{conn: conn, iface: IDENTITY_IFACE, path: IDENTITY_PATH},
+		statusChan:  make(chan *model.IdentityStatus, 10),
 	}
 }
 
@@ -27,10 +32,7 @@ func NewIdentityService() *IdentityService {
 func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
 	logger.Verbose("Listening to identity status")
 	i.listen(func(sig map[string]dbus.Variant) {
-		select {
-		case i.statusChan <- MapDbusDictToStruct(sig, &model.IdentityStatus{}):
-		default:
-		}
+		i.statusChan <- MapDbusDictToStruct(sig, &model.IdentityStatus{})
 	})
 	return i.statusChan
 }

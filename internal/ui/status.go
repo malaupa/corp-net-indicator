@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"os/signal"
 
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
@@ -72,19 +73,21 @@ func (s *Status) Run(quickConnect bool) {
 	vChan := vSer.ListenToVPN()
 	iChan := iSer.ListenToIdentity()
 
-	c := make(chan struct{})
+	// catch interrupt and clean up
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
 	go func() {
 		for {
 			select {
 			// handle window clicks
-			case c := <-s.connectDisconnectClicked:
+			case connect := <-s.connectDisconnectClicked:
 				s.ctx.Write(func(ctx *model.ContextValues) {
 					ctx.VPNInProgress = true
 				})
-				if c != nil {
+				if connect != nil {
 					logger.Verbose("Open dialog to connect to VPN")
 
-					if err := vSer.Connect(c.Password, c.Server); err != nil {
+					if err := vSer.Connect(connect.Password, connect.Server); err != nil {
 						s.handleDBUSError(err)
 					}
 				} else {
@@ -122,9 +125,7 @@ func (s *Status) Run(quickConnect bool) {
 				go s.window.ApplyVPNStatus(status)
 			case <-c:
 				logger.Verbose("Received SIGINT -> closing")
-
-				vSer.Close()
-				iSer.Close()
+				s.window.Close()
 				return
 			}
 		}
@@ -133,8 +134,10 @@ func (s *Status) Run(quickConnect bool) {
 	// open window
 	s.window.Open(iStatus, vStatus, servers, quickConnect)
 	logger.Verbose("Window closed")
-
 	close(c)
+
+	vSer.Close()
+	iSer.Close()
 }
 
 func (s *Status) handleDBUSError(err error) {

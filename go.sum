@@ -1,3 +1,7 @@
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230512172702-4f40a1d36f16 h1:zbR94TNtNibDv1TMRXdm8xGuTWfYfeJovsb6J6BDwtY=
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230512172702-4f40a1d36f16/go.mod h1:cV/9yzqFCmfe9ZyC3LzEyIQQM8LwBS2HJ72V8iXCZ7I=
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f h1:CNfQjJvRLK1aGFtxhUrsMGkx5fsrFRVS92I66ORdfZw=
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f/go.mod h1:cV/9yzqFCmfe9ZyC3LzEyIQQM8LwBS2HJ72V8iXCZ7I=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
@@ -7,11 +11,14 @@ github.com/malaupa/dbus/v5 v5.2.0-next h1:+0SDsh9GzUwzHNy2qBGRZvpPmoZvCkGvNfQdsI
 github.com/malaupa/dbus/v5 v5.2.0-next/go.mod h1:fXoNnqaUvdKqjJmMGeiBgmRphUg+kO0MT4AhPOP6+Qg=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
+github.com/sirupsen/logrus v1.9.0 h1:trlNQbNUG3OdDrDil03MCb1H2o9nJ1x4/5LYw7byDE0=
+github.com/sirupsen/logrus v1.9.0/go.mod h1:naHLuLoDiP4jHNo9R0sCBMtWGeIprob74mVsIT4qYEQ=
 github.com/slytomcat/systray v1.10.1 h1:vYtzZM+LOLfEwbF+kILr4CXhN2vsszwCEjlnUhZXmK4=
 github.com/slytomcat/systray v1.10.1/go.mod h1:UyMmnc5TrZp3JdLFS8wGUMSQSnFoliaj4rsO3bZwpis=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.4.0/go.mod h1:YvHI0jy2hoMjB+UWwv71VJQ9isScKT/TqJzVSSt89Yw=
 github.com/stretchr/objx v0.5.0/go.mod h1:Yh+to48EsGEfYuaHDzXPcE3xhTkx73EhmCGUpEOglKo=
+github.com/stretchr/testify v1.7.0/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.7.1/go.mod h1:6Fq8oRcR53rry900zMqJjRRixrwX3KX962/h/Wwjteg=
 github.com/stretchr/testify v1.8.0/go.mod h1:yNjHg4UonilssWZ8iaSj1OCr/vHnekPRkoO+kdMU+MU=
 github.com/stretchr/testify v1.8.2 h1:+h33VjcLVPDHtOdpUCuF+7gSuG3yGIftsP1YvFihtJ8=
@@ -20,6 +27,7 @@ go4.org/unsafe/assume-no-moving-gc v0.0.0-20230221090011-e4bae7ad2296 h1:QJ/xcIA
 go4.org/unsafe/assume-no-moving-gc v0.0.0-20230221090011-e4bae7ad2296/go.mod h1:FftLjUGFEDu5k8lt0ddY+HcrH/qU/0qk+H8j9/nTl3E=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c h1:5KslGYwFpkhGh+Q16bwMP3cOontH8FOep7tGV86Y7SQ=
 golang.org/x/sync v0.0.0-20210220032951-036812b2e83c/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
+golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.0.0-20220817070843-5a390386f1f2/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
 golang.org/x/sys v0.6.0 h1:MVltZSvRTcU2ljQOhs94SXPftV6DCNnZViHeQps87pQ=
 golang.org/x/sys v0.6.0/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=

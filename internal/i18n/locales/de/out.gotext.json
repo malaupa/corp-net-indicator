@@ -92,14 +92,19 @@
             "translation": "Abbrechen"
         },
         {
+            "id": "not trusted",
+            "message": "not trusted",
+            "translation": "nicht vertrauenswürdig"
+        },
+        {
             "id": "VPN Details",
             "message": "VPN Details",
             "translation": "VPN Details"
         },
         {
-            "id": "Trusted Network",
-            "message": "Trusted Network",
-            "translation": "Trusted Network"
+            "id": "Physical network",
+            "message": "Physical network",
+            "translation": "Phys. Netzwerk"
         },
         {
             "id": "Connected",
@@ -125,6 +130,11 @@
             "id": "Certificate expires",
             "message": "Certificate expires",
             "translation": "Zertifikat läuft aus am"
+        },
+        {
+            "id": "trusted",
+            "message": "trusted",
+            "translation": "vertrauenswürdig"
         }
     ]
 }

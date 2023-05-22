@@ -3,6 +3,7 @@ module com.telekom-mms.corp-net-indicator
 go 1.20
 
 require (
+	github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f
 	github.com/diamondburned/gotk4/pkg v0.0.5
 	github.com/slytomcat/systray v1.10.1
 	golang.org/x/text v0.8.0
@@ -11,6 +12,7 @@ require (
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 

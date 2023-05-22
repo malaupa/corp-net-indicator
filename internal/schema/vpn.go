@@ -22,9 +22,7 @@ type vpnAgent struct {
 var counter atomic.Uint32
 
 func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string) *dbus.Error {
-	log.Printf("VPN: Connect called! %+v\n", struct {
-		cookie, host, connectUrl, fingerprint, resolve string
-	}{cookie, host, connectUrl, fingerprint, resolve})
+	log.Println("VPN: Connect called!")
 	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", model.Connecting)
 	go func() {
 		var now int64 = 0

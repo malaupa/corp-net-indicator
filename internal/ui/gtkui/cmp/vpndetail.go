@@ -15,15 +15,15 @@ type VPNDetail struct {
 
 	actionClicked chan *model.Credentials
 
-	trustedNetworkImg *statusIcon
-	connectedImg      *statusIcon
-	actionSpinner     *gtk.Spinner
-	actionBtn         *gtk.Button
-	connectedAtLabel  *gtk.Label
-	ipLabel           *gtk.Label
-	deviceLabel       *gtk.Label
-	certExpiresLabel  *gtk.Label
-	loginDialog       *loginDialog
+	trustedNetworkLabel *gtk.Label
+	connectedImg        *statusIcon
+	actionSpinner       *gtk.Spinner
+	actionBtn           *gtk.Button
+	connectedAtLabel    *gtk.Label
+	ipLabel             *gtk.Label
+	deviceLabel         *gtk.Label
+	certExpiresLabel    *gtk.Label
+	loginDialog         *loginDialog
 
 	identityDetail *IdentityDetails
 }
@@ -54,22 +54,21 @@ func NewVPNDetail(
 	if status.IsConnected(false) {
 		vd.actionBtn.SetLabel(i18n.L.Sprintf("Disconnect VPN"))
 	}
-	trustedNetwork := status.IsTrustedNetwork(false)
-	vd.actionBtn.SetSensitive(!trustedNetwork)
 	vd.actionBtn.ConnectClicked(vd.OnActionClicked)
 	vd.actionSpinner = gtk.NewSpinner()
 	vd.actionSpinner.SetHAlign(gtk.AlignEnd)
-	vd.trustedNetworkImg = NewStatusIcon(trustedNetwork)
+	vd.trustedNetworkLabel = gtk.NewLabel(i18n.L.Sprintf("not trusted"))
 	vd.connectedImg = NewStatusIcon(status.IsConnected(false))
 	vd.connectedAtLabel = gtk.NewLabel(util.FormatDate(status.ConnectedAt))
 	vd.ipLabel = gtk.NewLabel(util.FormatValue(status.IP))
 	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
 	vd.certExpiresLabel = gtk.NewLabel(util.FormatDate(status.CertExpiresAt))
+	vd.applyTrustedNetwork(status.IsTrustedNetwork(false))
 
 	// set icons, labels and button with spinner in details box
 	vd.
 		buildBase(i18n.L.Sprintf("VPN Details")).
-		addRow(i18n.L.Sprintf("Trusted Network"), vd.trustedNetworkImg).
+		addRow(i18n.L.Sprintf("Physical network"), vd.trustedNetworkLabel).
 		addRow(i18n.L.Sprintf("Connected"), vd.actionSpinner, vd.actionBtn, vd.connectedImg).
 		addRow(i18n.L.Sprintf("Connected at"), vd.connectedAtLabel).
 		addRow(i18n.L.Sprintf("IP"), vd.ipLabel).
@@ -100,8 +99,8 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		vd.trustedNetworkImg.SetStatus(status.IsTrustedNetwork(ctx.TrustedNetwork))
 		vd.connectedImg.SetStatus(status.IsConnected(ctx.Connected))
+		vd.applyTrustedNetwork(status.IsTrustedNetwork(ctx.TrustedNetwork))
 		if status.ConnectedAt != nil {
 			vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
 		}
@@ -161,4 +160,24 @@ func (vd *VPNDetail) triggerAction(cred *model.Credentials) {
 // triggers dialog closing
 func (vd *VPNDetail) Close() {
 	vd.loginDialog.close()
+}
+
+// apply values related to trusted network setting
+func (vd *VPNDetail) applyTrustedNetwork(trustedNetwork bool) {
+	if trustedNetwork {
+		vd.trustedNetworkLabel.SetText(i18n.L.Sprintf("trusted"))
+		vd.actionBtn.SetSensitive(false)
+		vd.connectedImg.SetOpacity(0.5)
+		vd.connectedAtLabel.SetOpacity(0.5)
+		vd.ipLabel.SetOpacity(0.5)
+		vd.connectedImg.SetIgnore()
+		vd.connectedAtLabel.SetText(util.FormatDate(nil))
+		vd.ipLabel.SetText(util.FormatValue(nil))
+	} else {
+		vd.trustedNetworkLabel.SetText(i18n.L.Sprintf("not trusted"))
+		vd.actionBtn.SetSensitive(true)
+		vd.connectedImg.SetOpacity(1)
+		vd.connectedAtLabel.SetOpacity(1)
+		vd.ipLabel.SetOpacity(1)
+	}
 }

@@ -1,8 +1,15 @@
 package service
 
 import (
+	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
+	oc "github.com/T-Systems-MMS/oc-daemon/pkg/client"
 	"github.com/godbus/dbus/v5"
+)
+
+const (
+	VPN_IFACE = "com.telekom_mms.oc_daemon.Daemon"
+	VPN_PATH  = "/com/telekom_mms/oc_daemon/Daemon"
 )
 
 type VPNService struct {
@@ -17,25 +24,38 @@ func NewVPNService() *VPNService {
 		panic(err)
 	}
 	return &VPNService{
-		dbusService: dbusService{conn: conn, iface: "com.telekom_mms.oc_daemon.Daemon", path: "/com/telekom_mms/oc_daemon/Daemon"},
-		statusChan:  make(chan *model.VPNStatus, 1),
+		dbusService: dbusService{conn: conn, iface: VPN_IFACE, path: VPN_PATH},
+		statusChan:  make(chan *model.VPNStatus, 10),
 	}
 }
 
 // attaches to the vpn DBUS status signal and delivers them by returned channel
 func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
+	logger.Verbose("Listening to vpn status")
 	v.listen(func(result map[string]dbus.Variant) {
-		select {
-		case v.statusChan <- MapDbusDictToStruct(result, &model.VPNStatus{}):
-		default:
-		}
+		v.statusChan <- MapDbusDictToStruct(result, &model.VPNStatus{})
 	})
 	return v.statusChan
 }
 
 // triggers VPN connect
 func (v *VPNService) Connect(password string, server string) error {
-	return v.callMethod("Connect", "cookie", "host", "connectUrl", "fingerprint", "resolve").Store()
+	config := oc.LoadUserSystemConfig()
+	client := oc.NewClient(config)
+	client.Config.Password = password
+	client.Config.VPNServer = server
+
+	err := client.Authenticate()
+	if err != nil {
+		return err
+	}
+
+	return v.callMethod("Connect",
+		client.Login.Cookie,
+		client.Login.Host,
+		client.Login.ConnectURL,
+		client.Login.Fingerprint,
+		client.Login.Resolve).Store()
 }
 
 // triggers VPN disconnect

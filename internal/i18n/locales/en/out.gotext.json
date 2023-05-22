@@ -124,6 +124,13 @@
             "fuzzy": true
         },
         {
+            "id": "not trusted",
+            "message": "not trusted",
+            "translation": "not trusted",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
             "id": "VPN Details",
             "message": "VPN Details",
             "translation": "VPN Details",
@@ -131,9 +138,9 @@
             "fuzzy": true
         },
         {
-            "id": "Trusted Network",
-            "message": "Trusted Network",
-            "translation": "Trusted Network",
+            "id": "Physical network",
+            "message": "Physical network",
+            "translation": "Physical network",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         },
@@ -169,6 +176,13 @@
             "id": "Certificate expires",
             "message": "Certificate expires",
             "translation": "Certificate expires",
+            "translatorComment": "Copied from source.",
+            "fuzzy": true
+        },
+        {
+            "id": "trusted",
+            "message": "trusted",
+            "translation": "trusted",
             "translatorComment": "Copied from source.",
             "fuzzy": true
         }

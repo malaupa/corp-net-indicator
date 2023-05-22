@@ -1,6 +1,9 @@
 package cmp
 
-import "github.com/diamondburned/gotk4/pkg/gtk/v4"
+import (
+	"com.telekom-mms.corp-net-indicator/internal/assets"
+	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+)
 
 type statusIcon struct {
 	gtk.Image
@@ -13,11 +16,16 @@ func NewStatusIcon(status bool) *statusIcon {
 	return icon
 }
 
-// changes icon -> true = green check, false = red cross
+// changes icon -> true = green check, false = red alert
 func (i *statusIcon) SetStatus(status bool) {
 	if status {
-		i.SetFromIconName("emblem-default")
+		i.SetFromPixbuf(assets.GetPixbuf(assets.SVGCheck))
 	} else {
-		i.SetFromIconName("emblem-important")
+		i.SetFromPixbuf(assets.GetPixbuf(assets.SVGAlert))
 	}
+}
+
+// sets a icon to minus circle as value should be ignored
+func (i *statusIcon) SetIgnore() {
+	i.SetFromPixbuf(assets.GetPixbuf(assets.SVGMinus))
 }
