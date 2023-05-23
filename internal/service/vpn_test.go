@@ -1,12 +1,12 @@
-package service_test
+package service
 
 import (
 	"testing"
 
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	testserver "com.telekom-mms.corp-net-indicator/internal/schema"
-	"com.telekom-mms.corp-net-indicator/internal/service"
 	"com.telekom-mms.corp-net-indicator/internal/test"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/logininfo"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -14,7 +14,7 @@ func TestGetVPNStatus(t *testing.T) {
 	s := testserver.NewVPNServer(false)
 	defer s.Close()
 
-	c := service.NewVPNService()
+	c := NewVPNService()
 	defer c.Close()
 
 	status, err := c.GetStatus()
@@ -31,7 +31,7 @@ func TestGetVPNStatus(t *testing.T) {
 
 func TestGetVPNStatusError(t *testing.T) {
 	s := testserver.NewVPNServer(false)
-	c := service.NewVPNService()
+	c := NewVPNService()
 	defer c.Close()
 
 	s.Close()
@@ -41,12 +41,27 @@ func TestGetVPNStatusError(t *testing.T) {
 	assert.Nil(t, status)
 }
 
+type testClient struct {
+}
+
+func (c *testClient) Authenticate() error {
+	return nil
+}
+
+func (c *testClient) SetConfig(password, server string) {
+}
+
+func (c *testClient) GetLoginInfo() *logininfo.LoginInfo {
+	return &logininfo.LoginInfo{Cookie: "cookie", Host: "host", ConnectURL: "connectURL", Fingerprint: "fingerprint", Resolve: "resolve"}
+}
+
 func TestConnectAndDisconnect(t *testing.T) {
 	assert := assert.New(t)
 	s := testserver.NewVPNServer(false)
 	defer s.Close()
 
-	c := service.NewVPNService()
+	c := NewVPNService()
+	c.ocClient = &testClient{}
 	defer c.Close()
 
 	ready := make(chan struct{})

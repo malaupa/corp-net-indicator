@@ -4,6 +4,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	oc "github.com/T-Systems-MMS/oc-daemon/pkg/client"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/logininfo"
 	"github.com/godbus/dbus/v5"
 )
 
@@ -12,10 +13,34 @@ const (
 	VPN_PATH  = "/com/telekom_mms/oc_daemon/Daemon"
 )
 
+// allows to mock oc client api
+type client interface {
+	Authenticate() error
+	SetConfig(password, server string)
+	GetLoginInfo() *logininfo.LoginInfo
+}
+
+// wraps oc client
+type ocClient struct {
+	oc.Client
+}
+
+// sets necessary config attributes
+func (c *ocClient) SetConfig(password, server string) {
+	c.Config.Password = password
+	c.Config.VPNServer = server
+}
+
+// returns login info object
+func (c *ocClient) GetLoginInfo() *logininfo.LoginInfo {
+	return c.Login
+}
+
 type VPNService struct {
 	dbusService
 
 	statusChan chan *model.VPNStatus
+	ocClient   client
 }
 
 func NewVPNService() *VPNService {
@@ -26,6 +51,7 @@ func NewVPNService() *VPNService {
 	return &VPNService{
 		dbusService: dbusService{conn: conn, iface: VPN_IFACE, path: VPN_PATH},
 		statusChan:  make(chan *model.VPNStatus, 10),
+		ocClient:    &ocClient{Client: *oc.NewClient(oc.LoadUserSystemConfig())},
 	}
 }
 
@@ -40,22 +66,15 @@ func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
 
 // triggers VPN connect
 func (v *VPNService) Connect(password string, server string) error {
-	config := oc.LoadUserSystemConfig()
-	client := oc.NewClient(config)
-	client.Config.Password = password
-	client.Config.VPNServer = server
+	v.ocClient.SetConfig(password, server)
 
-	err := client.Authenticate()
+	err := v.ocClient.Authenticate()
 	if err != nil {
 		return err
 	}
+	info := v.ocClient.GetLoginInfo()
 
-	return v.callMethod("Connect",
-		client.Login.Cookie,
-		client.Login.Host,
-		client.Login.ConnectURL,
-		client.Login.Fingerprint,
-		client.Login.Resolve).Store()
+	return v.callMethod("Connect", info.Cookie, info.Host, info.ConnectURL, info.Fingerprint, info.Resolve).Store()
 }
 
 // triggers VPN disconnect
