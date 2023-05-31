@@ -1,6 +1,8 @@
 package model
 
 import (
+	"fmt"
+	"reflect"
 	"sync"
 )
 
@@ -79,6 +81,10 @@ type IdentityStatus struct {
 	KerberosTGTEndTime   *int64
 }
 
+func (s *IdentityStatus) String() string {
+	return ToString(s)
+}
+
 func (s *IdentityStatus) InProgress(ctxInProgress bool) bool {
 	return (s.LoginState != nil && (*s.LoginState == LoggingIn || *s.LoginState == LoggingOut)) ||
 		(s.LoginState == nil && ctxInProgress)
@@ -97,6 +103,10 @@ type VPNStatus struct {
 	Device          *string
 	ConnectedAt     *int64
 	CertExpiresAt   *int64
+}
+
+func (s *VPNStatus) String() string {
+	return ToString(s)
 }
 
 func (s *VPNStatus) IsTrustedNetwork(ctxTrusted bool) bool {
@@ -118,4 +128,36 @@ func (s *VPNStatus) InProgress(ctxInProgress bool) bool {
 type Credentials struct {
 	Password string
 	Server   string
+}
+
+// expands pointers to values in structs
+func ToString[T interface{}](structType T) string {
+	result := "{"
+	// unwrap result struct
+	elem := reflect.ValueOf(structType).Elem()
+	elemType := elem.Type()
+	// iterate over struct fields
+	for i := 0; i < elem.NumField(); i++ {
+		// get and check field value
+		fieldValue := elem.Field(i)
+		if !fieldValue.IsValid() {
+			continue
+		}
+		// add separator
+		if i != 0 {
+			result += ", "
+		}
+		// get field definition
+		field := elemType.Field(i)
+		var val any = fieldValue
+		if field.Type.Kind() == reflect.Pointer {
+			if fieldValue.IsNil() {
+				val = "<nil>"
+			} else {
+				val = fieldValue.Elem()
+			}
+		}
+		result += fmt.Sprintf("%s: %v", field.Name, val)
+	}
+	return result + "}"
 }

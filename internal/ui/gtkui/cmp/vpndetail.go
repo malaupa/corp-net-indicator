@@ -36,34 +36,29 @@ func NewVPNDetail(
 	vpnActionClicked chan *model.Credentials,
 	// parent window to attach login dialog
 	parent *gtk.Window,
-	// fresh vpn status to process
-	status *model.VPNStatus,
 	// servers to list in login window
-	servers []string,
+	getServers func() ([]string, error),
 	// identity details to set button and icon state
 	identityDetail *IdentityDetails) *VPNDetail {
 
 	vd := &VPNDetail{detail: newDetail(), ctx: context, actionClicked: vpnActionClicked, identityDetail: identityDetail}
 
 	// create login dialog
-	vd.loginDialog = newLoginDialog(parent, servers)
+	vd.loginDialog = newLoginDialog(parent, getServers)
 
 	// create action button with spinner, icons and labels
 	vd.actionBtn = gtk.NewButtonWithLabel(i18n.L.Sprintf("Connect VPN"))
 	vd.actionBtn.SetHAlign(gtk.AlignEnd)
-	if status.IsConnected(false) {
-		vd.actionBtn.SetLabel(i18n.L.Sprintf("Disconnect VPN"))
-	}
 	vd.actionBtn.ConnectClicked(vd.OnActionClicked)
 	vd.actionSpinner = gtk.NewSpinner()
 	vd.actionSpinner.SetHAlign(gtk.AlignEnd)
 	vd.trustedNetworkLabel = gtk.NewLabel(i18n.L.Sprintf("not trusted"))
-	vd.connectedImg = NewStatusIcon(status.IsConnected(false))
-	vd.connectedAtLabel = gtk.NewLabel(util.FormatDate(status.ConnectedAt))
-	vd.ipLabel = gtk.NewLabel(util.FormatValue(status.IP))
-	vd.deviceLabel = gtk.NewLabel(util.FormatValue(status.Device))
-	vd.certExpiresLabel = gtk.NewLabel(util.FormatDate(status.CertExpiresAt))
-	vd.applyTrustedNetwork(status.IsTrustedNetwork(false))
+	vd.connectedImg = NewStatusIcon(false)
+	vd.connectedAtLabel = gtk.NewLabel(util.DefaultValue)
+	vd.ipLabel = gtk.NewLabel(util.DefaultValue)
+	vd.deviceLabel = gtk.NewLabel(util.DefaultValue)
+	vd.certExpiresLabel = gtk.NewLabel(util.DefaultValue)
+	vd.applyTrustedNetwork(false)
 
 	// set icons, labels and button with spinner in details box
 	vd.
@@ -75,20 +70,14 @@ func NewVPNDetail(
 		addRow(i18n.L.Sprintf("Device"), vd.deviceLabel).
 		addRow(i18n.L.Sprintf("Certificate expires"), vd.certExpiresLabel)
 
-		// set correct identity status
-	vd.identityDetail.setButtonAndLoginState()
-	// progress
-	ctx := vd.ctx.Read()
-	if ctx.VPNInProgress {
-		vd.identityDetail.setReLoginBtn(false)
-		vd.actionBtn.SetSensitive(false)
-		vd.actionSpinner.Start()
-	}
+	vd.actionBtn.SetSensitive(false)
+	vd.actionSpinner.Start()
+
 	return vd
 }
 
 // applies new vpn status and calls afterApply after them
-func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
+func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func(vpnConnected bool)) {
 	glib.IdleAdd(func() {
 		ctx := vd.ctx.Read()
 		if ctx.IdentityInProgress || ctx.VPNInProgress {
@@ -99,7 +88,8 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		vd.connectedImg.SetStatus(status.IsConnected(ctx.Connected))
+		connected := status.IsConnected(ctx.Connected)
+		vd.connectedImg.SetStatus(connected)
 		vd.applyTrustedNetwork(status.IsTrustedNetwork(ctx.TrustedNetwork))
 		if status.ConnectedAt != nil {
 			vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
@@ -110,8 +100,11 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func()) {
 		if status.IP != nil {
 			vd.ipLabel.SetText(util.FormatValue(status.IP))
 		}
+		if status.CertExpiresAt != nil {
+			vd.certExpiresLabel.SetText(util.FormatDate(status.CertExpiresAt))
+		}
 		vd.SetButtonsAfterProgress()
-		afterApply()
+		afterApply(connected)
 	})
 }
 
@@ -137,7 +130,11 @@ func (vd *VPNDetail) OnActionClicked() {
 	if vd.ctx.Read().Connected {
 		go vd.triggerAction(nil)
 	} else {
-		resultChan := vd.loginDialog.open()
+		resultChan, err := vd.loginDialog.open()
+		if err != nil {
+			// is handled in parent
+			return
+		}
 		go func() {
 			result := <-resultChan
 			if result != nil {

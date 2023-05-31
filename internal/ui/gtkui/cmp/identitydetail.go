@@ -26,9 +26,7 @@ func NewIdentityDetails(
 	// shared context
 	ctx *model.Context,
 	// channel to notify reLogin clicks
-	reLoginClicked chan bool,
-	// fresh identity status to process
-	status *model.IdentityStatus) *IdentityDetails {
+	reLoginClicked chan bool) *IdentityDetails {
 
 	id := &IdentityDetails{detail: newDetail(), ctx: ctx, reLoginClicked: reLoginClicked}
 
@@ -37,11 +35,11 @@ func NewIdentityDetails(
 	id.reLoginBtn.SetHAlign(gtk.AlignEnd)
 	// set click handler
 	id.reLoginBtn.ConnectClicked(id.onReLoginClicked)
-	id.loggedInImg = NewStatusIcon(status.IsLoggedIn(false))
+	id.loggedInImg = NewStatusIcon(false)
 	id.reLoginSpinner = gtk.NewSpinner()
 	id.reLoginSpinner.SetHAlign(gtk.AlignEnd)
-	id.keepAliveAtLabel = gtk.NewLabel(util.FormatDate(status.LastKeepAliveAt))
-	id.krbEndTimeLabel = gtk.NewLabel(util.FormatDate(status.KerberosTGTEndTime))
+	id.keepAliveAtLabel = gtk.NewLabel(util.DefaultValue)
+	id.krbEndTimeLabel = gtk.NewLabel(util.DefaultValue)
 
 	// build details box and attach them to the values and actions
 	id.
@@ -50,11 +48,8 @@ func NewIdentityDetails(
 		addRow(i18n.L.Sprintf("Last Refresh"), id.keepAliveAtLabel).
 		addRow(i18n.L.Sprintf("Kerberos ticket valid until"), id.krbEndTimeLabel)
 
-	// set progress if needed
-	if ctx.Read().IdentityInProgress {
-		id.reLoginSpinner.Start()
-		id.reLoginBtn.SetSensitive(false)
-	}
+	id.reLoginBtn.SetSensitive(false)
+	id.reLoginSpinner.Start()
 
 	return id
 }

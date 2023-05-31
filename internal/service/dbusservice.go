@@ -1,8 +1,15 @@
 package service
 
 import (
+	"strings"
+	"time"
+
+	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"github.com/godbus/dbus/v5"
 )
+
+const DEBOUNCE = 5
+const ERR_SUFFIX = "was not provided by any .service files"
 
 type dbusService struct {
 	conn *dbus.Conn
@@ -12,17 +19,37 @@ type dbusService struct {
 }
 
 func (d *dbusService) listen(onSignal func(sig map[string]dbus.Variant)) {
-	opts := []dbus.MatchOption{
-		dbus.WithMatchSender(d.iface),
-		dbus.WithMatchObjectPath(dbus.ObjectPath(d.path)),
-		dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
-		dbus.WithMatchMember("PropertiesChanged"),
-	}
-	err := d.conn.AddMatchSignal(opts...)
-	if err != nil {
-		panic(err)
-	}
 	go func() {
+		logger.Verbose("Get initial status")
+		for {
+			select {
+			case <-d.conn.Context().Done():
+				return
+			default:
+			}
+			status, err := d.getStatus()
+			if err != nil && !strings.Contains(err.Error(), ERR_SUFFIX) {
+				logger.Logf("DBUS error: %v\n", err)
+			}
+			if status != nil {
+				onSignal(status)
+				break
+			}
+			logger.Verbosef("Wait %d seconds for service to come up...", DEBOUNCE)
+			time.Sleep(time.Second * DEBOUNCE)
+		}
+
+		logger.Verbose("Listening to dbus...")
+		opts := []dbus.MatchOption{
+			dbus.WithMatchSender(d.iface),
+			dbus.WithMatchObjectPath(dbus.ObjectPath(d.path)),
+			dbus.WithMatchInterface("org.freedesktop.DBus.Properties"),
+			dbus.WithMatchMember("PropertiesChanged"),
+		}
+		err := d.conn.AddMatchSignal(opts...)
+		if err != nil {
+			panic(err)
+		}
 		// should not be necessary, is removed on disconnect to dbus
 		// defer d.conn.RemoveMatchSignal(opts...)
 

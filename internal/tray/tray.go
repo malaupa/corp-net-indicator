@@ -103,27 +103,6 @@ func (t *tray) Run() {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 	wSer := service.NewWatcher()
-	// update tray
-	vStatus, err := vSer.GetStatus()
-	if err != nil {
-		logger.Logf("DBUS error: %v\n", err)
-		os.Exit(1)
-	}
-	iStatus, err := iSer.GetStatus()
-	if err != nil {
-		logger.Logf("DBUS error: %v\n", err)
-		os.Exit(1)
-	}
-	ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-		ctx.VPNInProgress = vStatus.InProgress(ctx.VPNInProgress)
-		ctx.Connected = vStatus.IsConnected(ctx.Connected)
-		ctx.TrustedNetwork = vStatus.IsTrustedNetwork(ctx.TrustedNetwork)
-		ctx.IdentityInProgress = iStatus.InProgress(ctx.IdentityInProgress)
-		ctx.LoggedIn = iStatus.IsLoggedIn(ctx.LoggedIn)
-	})
-	t.apply(ctx)
-	// open window initially, if needed
-	t.windowInitiallyOpened = t.openWindowIfNeeded(vStatus)
 
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
@@ -179,7 +158,7 @@ func (t *tray) Run() {
 			t.apply(ctx)
 			// open window, if needed
 			if !t.windowInitiallyOpened {
-				t.windowInitiallyOpened = t.openWindowIfNeeded(vStatus)
+				t.windowInitiallyOpened = t.openWindowIfNeeded(status)
 			}
 		case <-wChan:
 			logger.Verbose("Watcher signal received")

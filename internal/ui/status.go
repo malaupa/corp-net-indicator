@@ -12,7 +12,7 @@ import (
 
 // minimal interface to interact with an ui implementation
 type StatusWindow interface {
-	Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool)
+	Open(quickConnect bool, getServers func() ([]string, error), onReady func())
 	Close()
 	ApplyIdentityStatus(status *model.IdentityStatus)
 	ApplyVPNStatus(status *model.VPNStatus)
@@ -45,30 +45,6 @@ func (s *Status) Run(quickConnect bool) {
 	vSer := service.NewVPNService()
 	iSer := service.NewIdentityService()
 
-	// get actual status
-	vStatus, err := vSer.GetStatus()
-	if err != nil {
-		logger.Logf("DBUS error: %v\n", err)
-		os.Exit(1)
-	}
-	iStatus, err := iSer.GetStatus()
-	if err != nil {
-		logger.Logf("DBUS error: %v\n", err)
-		os.Exit(1)
-	}
-	s.ctx.Write(func(ctx *model.ContextValues) {
-		ctx.VPNInProgress = vStatus.InProgress(ctx.VPNInProgress)
-		ctx.Connected = vStatus.IsConnected(ctx.Connected)
-		ctx.TrustedNetwork = vStatus.IsTrustedNetwork(ctx.TrustedNetwork)
-		ctx.IdentityInProgress = iStatus.InProgress(ctx.IdentityInProgress)
-		ctx.LoggedIn = iStatus.IsLoggedIn(ctx.LoggedIn)
-	})
-	servers, err := vSer.GetServerList()
-	if err != nil {
-		logger.Logf("DBUS error: %v\n", err)
-		os.Exit(1)
-	}
-
 	// listen to status changes
 	vChan := vSer.ListenToVPN()
 	iChan := iSer.ListenToIdentity()
@@ -76,7 +52,8 @@ func (s *Status) Run(quickConnect bool) {
 	// catch interrupt and clean up
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
-	go func() {
+
+	s.window.Open(quickConnect, vSer.GetServerList, func() {
 		for {
 			select {
 			// handle window clicks
@@ -129,10 +106,8 @@ func (s *Status) Run(quickConnect bool) {
 				return
 			}
 		}
-	}()
+	})
 
-	// open window
-	s.window.Open(iStatus, vStatus, servers, quickConnect)
 	logger.Verbose("Window closed")
 	close(c)
 

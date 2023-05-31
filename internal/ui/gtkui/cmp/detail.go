@@ -51,7 +51,7 @@ func (d *detail) addRow(labelText string, value ...gtk.Widgetter) *detail {
 	row := gtk.NewListBoxRow()
 	row.SetChild(box)
 	row.SetActivatable(false)
-	row.SetSizeRequest(340, 0)
+	row.SetSizeRequest(360, 0)
 	// append row to list
 	d.list.Append(row)
 	return d

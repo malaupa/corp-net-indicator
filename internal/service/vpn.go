@@ -57,7 +57,7 @@ func NewVPNService() *VPNService {
 
 // attaches to the vpn DBUS status signal and delivers them by returned channel
 func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
-	logger.Verbose("Listening to vpn status")
+	logger.Verbose("Start listening to vpn status")
 	v.listen(func(result map[string]dbus.Variant) {
 		v.statusChan <- MapDbusDictToStruct(result, &model.VPNStatus{})
 	})
@@ -75,6 +75,7 @@ func (v *VPNService) Connect(password string, server string) error {
 	info := v.ocClient.GetLoginInfo()
 
 	return v.callMethod("Connect", info.Cookie, info.Host, info.ConnectURL, info.Fingerprint, info.Resolve).Store()
+	// return v.callMethod("Connect", "info.Cookie", "info.Host", "info.ConnectURL", "info.Fingerprint", "info.Resolve").Store()
 }
 
 // triggers VPN disconnect

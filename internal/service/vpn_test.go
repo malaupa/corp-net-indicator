@@ -71,14 +71,17 @@ func TestConnectAndDisconnect(t *testing.T) {
 		sC := c.ListenToVPN()
 		var results []model.VPNStatus
 		count := 0
-		close(ready)
 		for status := range sC {
 			count++
+			if count == 1 {
+				close(ready)
+				continue
+			}
 			results = append(results, *status)
-			if count == 4 {
+			if count == 5 {
 				break
 			}
-			if count == 2 {
+			if count == 3 {
 				close(connected)
 			}
 		}

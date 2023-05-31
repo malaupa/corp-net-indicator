@@ -10,16 +10,21 @@ import (
 type loginDialog struct {
 	parent     *gtk.Window
 	dialog     *gtk.Dialog
-	serverList []string
+	getServers func() ([]string, error)
 }
 
 // creates new login window handle
-func newLoginDialog(parent *gtk.Window, serverList []string) *loginDialog {
-	return &loginDialog{parent: parent, serverList: serverList}
+func newLoginDialog(parent *gtk.Window, getServers func() ([]string, error)) *loginDialog {
+	return &loginDialog{parent: parent, getServers: getServers}
 }
 
 // triggers dialog opening
-func (d *loginDialog) open() <-chan *model.Credentials {
+func (d *loginDialog) open() (<-chan *model.Credentials, error) {
+	servers, err := d.getServers()
+	if err != nil {
+		return nil, err
+	}
+
 	const dialogFlags = 0 |
 		gtk.DialogDestroyWithParent |
 		gtk.DialogModal |
@@ -41,7 +46,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	// serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
 	serverListEntry := gtk.NewComboBoxText()
 	serverListEntry.SetPopupFixedWidth(true)
-	for _, server := range d.serverList {
+	for _, server := range servers {
 		serverListEntry.AppendText(server)
 	}
 	serverListEntry.SetActive(0)
@@ -112,7 +117,7 @@ func (d *loginDialog) open() <-chan *model.Credentials {
 	d.dialog.Show()
 
 	// return result channel -> credentials are given for success
-	return result
+	return result, nil
 }
 
 // closes dialog

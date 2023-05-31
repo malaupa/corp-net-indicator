@@ -53,11 +53,14 @@ func TestReLogin(t *testing.T) {
 		sC := c.ListenToIdentity()
 		var results []model.IdentityStatus
 		count := 0
-		close(ready)
 		for status := range sC {
 			count++
+			if count == 1 {
+				close(ready)
+				continue
+			}
 			results = append(results, *status)
-			if count == 2 {
+			if count == 3 {
 				break
 			}
 		}

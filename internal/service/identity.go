@@ -30,7 +30,7 @@ func NewIdentityService() *IdentityService {
 
 // attaches to DBUS properties changed signal, maps to status and delivers them by returned channel
 func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
-	logger.Verbose("Listening to identity status")
+	logger.Verbose("Start listening to identity status")
 	i.listen(func(sig map[string]dbus.Variant) {
 		i.statusChan <- MapDbusDictToStruct(sig, &model.IdentityStatus{})
 	})

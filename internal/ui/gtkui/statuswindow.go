@@ -32,7 +32,7 @@ func NewStatusWindow(ctx *model.Context, vpnActionClicked chan *model.Credential
 
 // opens a new status window
 // initialization is done with given status data
-func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNStatus, servers []string, quickConnect bool) {
+func (sw *statusWindow) Open(quickConnect bool, getServers func() ([]string, error), onReady func()) {
 	sw.quickConnect = quickConnect
 	app := gtk.NewApplication("com.telekom-mms.corp-net-indicator", gio.ApplicationFlagsNone)
 	app.ConnectActivate(func() {
@@ -86,8 +86,14 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		details.SetMarginEnd(60)
 
 		// create details
-		sw.identityDetail = cmp.NewIdentityDetails(sw.ctx, sw.reLoginClicked, iStatus)
-		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, vStatus, servers, sw.identityDetail)
+		sw.identityDetail = cmp.NewIdentityDetails(sw.ctx, sw.reLoginClicked)
+		sw.vpnDetail = cmp.NewVPNDetail(sw.ctx, sw.vpnActionClicked, &sw.window.Window, func() ([]string, error) {
+			servers, err := getServers()
+			if err != nil {
+				go sw.NotifyError(err)
+			}
+			return servers, err
+		}, sw.identityDetail)
 
 		// append all boxes
 		details.Append(sw.identityDetail)
@@ -104,9 +110,8 @@ func (sw *statusWindow) Open(iStatus *model.IdentityStatus, vStatus *model.VPNSt
 		sw.window.SetChild(overlay)
 		sw.window.Show()
 
-		if sw.quickConnect && !vStatus.IsConnected(false) {
-			sw.vpnDetail.OnActionClicked()
-		}
+		// call on ready
+		go onReady()
 	})
 
 	// this call blocks until window is closed
@@ -128,11 +133,15 @@ func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
 	if sw.window == nil {
 		return
 	}
-	sw.vpnDetail.Apply(status, func() {
+	sw.vpnDetail.Apply(status, func(vpnConnected bool) {
 		if sw.quickConnect {
-			logger.Verbose("Closing window after quick connect")
-
-			sw.Close()
+			if vpnConnected {
+				logger.Verbose("Closing window after quick connect")
+				sw.Close()
+			} else {
+				logger.Verbose("Open window on quick connect")
+				sw.vpnDetail.OnActionClicked()
+			}
 		}
 	})
 }
