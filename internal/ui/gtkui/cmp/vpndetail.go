@@ -92,10 +92,10 @@ func (vd *VPNDetail) Apply(status *vpnstatus.Status, afterApply func(vpnConnecte
 		connected := status.ConnectionState.Connected()
 		vd.connectedImg.SetStatus(connected)
 		vd.applyTrustedNetwork(status.TrustedNetwork.Trusted())
-		vd.connectedAtLabel.SetText(util.FormatDate(&status.ConnectedAt))
-		vd.deviceLabel.SetText(util.FormatValue(&status.Device))
-		vd.ipLabel.SetText(util.FormatValue(&status.IP))
-		vd.certExpiresLabel.SetText(util.FormatDate(nil)) // TODO
+		vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
+		vd.deviceLabel.SetText(util.FormatValue(status.Device))
+		vd.ipLabel.SetText(util.FormatValue(status.IP))
+		vd.certExpiresLabel.SetText(util.DefaultValue) // TODO
 		vd.SetButtonsAfterProgress()
 		afterApply(connected)
 	})
@@ -159,8 +159,8 @@ func (vd *VPNDetail) applyTrustedNetwork(trustedNetwork bool) {
 		vd.connectedAtLabel.SetOpacity(0.5)
 		vd.ipLabel.SetOpacity(0.5)
 		vd.connectedImg.SetIgnore()
-		vd.connectedAtLabel.SetText(util.FormatDate(nil))
-		vd.ipLabel.SetText(util.FormatValue(nil))
+		vd.connectedAtLabel.SetText(util.DefaultValue)
+		vd.ipLabel.SetText(util.DefaultValue)
 	} else {
 		vd.trustedNetworkLabel.SetText(i18n.L.Sprintf("not trusted"))
 		vd.actionBtn.SetSensitive(true)

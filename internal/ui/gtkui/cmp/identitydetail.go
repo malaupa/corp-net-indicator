@@ -71,8 +71,8 @@ func (id *IdentityDetails) Apply(status *status.Status) {
 		loggedIn := status.LoginState.LoggedIn()
 		id.loggedInImg.SetStatus(loggedIn)
 		id.setReLoginBtn(loggedIn)
-		id.keepAliveAtLabel.SetText(util.FormatDate(&status.LastKeepAlive))
-		id.krbEndTimeLabel.SetText(util.FormatDate(&status.KerberosTGT.StartTime))
+		id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAlive))
+		id.krbEndTimeLabel.SetText(util.FormatDate(status.KerberosTGT.StartTime))
 		// set button state
 		id.setButtonAndLoginState()
 	})

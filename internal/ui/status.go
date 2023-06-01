@@ -69,13 +69,13 @@ func (s *Status) Run(quickConnect bool) {
 					logger.Verbose("Open dialog to connect to VPN")
 
 					if err := vSer.ConnectWithPasswordAndServer(connect.Password, connect.Server); err != nil {
-						s.handleDBUSError(err)
+						s.handleError(err)
 					}
 				} else {
 					logger.Verbose("Tray to disconnect")
 
 					if err := vSer.Disconnect(); err != nil {
-						s.handleDBUSError(err)
+						s.handleError(err)
 					}
 				}
 			case <-s.reLoginClicked:
@@ -85,7 +85,7 @@ func (s *Status) Run(quickConnect bool) {
 					ctx.IdentityInProgress = true
 				})
 				if err := iSer.ReLogin(); err != nil {
-					s.handleDBUSError(err)
+					s.handleError(err)
 				}
 			case status := <-iChan:
 				logger.Verbosef("Apply identity status: %+v\n", status)
@@ -121,8 +121,8 @@ func (s *Status) Run(quickConnect bool) {
 	iSer.Close()
 }
 
-func (s *Status) handleDBUSError(err error) {
-	logger.Logf("DBUS Error: %v\n", err)
+func (s *Status) handleError(err error) {
+	logger.Logf("Error: %v\n", err)
 
 	s.ctx.Write(func(ctx *model.ContextValues) {
 		ctx.VPNInProgress = false
