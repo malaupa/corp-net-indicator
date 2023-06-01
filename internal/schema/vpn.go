@@ -6,10 +6,10 @@ import (
 	"sync/atomic"
 	"time"
 
-	"com.telekom-mms.corp-net-indicator/internal/model"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
@@ -24,7 +24,7 @@ var counter atomic.Uint32
 
 func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string) *dbus.Error {
 	log.Println("VPN: Connect called!")
-	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", model.Connecting)
+	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", vpnstatus.ConnectionStateConnecting)
 	go func() {
 		var now int64 = 0
 		if a.simulate {
@@ -32,7 +32,7 @@ func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string)
 			now = time.Now().Unix()
 		}
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
-			"ConnectionState": model.Connected,
+			"ConnectionState": vpnstatus.ConnectionStateConnected,
 			"ConnectedAt":     now,
 			"OCRunning":       vpnstatus.OCRunningRunning,
 		})
@@ -56,20 +56,20 @@ func (a vpnAgent) Disconnect() *dbus.Error {
 		}
 	}
 	log.Printf("VPN: Disconnect called!\n")
-	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", model.Disconnecting)
+	a.props.SetMust(V_DBUS_SERVICE_NAME, "ConnectionState", vpnstatus.ConnectionStateDisconnecting)
 	go func() {
 		if a.simulate {
 			time.Sleep(time.Second * 5)
 		}
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
-			"ConnectionState": model.Disconnected,
+			"ConnectionState": vpnstatus.ConnectionStateDisconnected,
 			"ConnectedAt":     0,
 			"OCRunning":       vpnstatus.OCRunningNotRunning,
 		})
 		if iA != nil && a.simulate {
 			time.Sleep(time.Second * 5)
 			iA.props.SetMustMany(I_DBUS_SERVICE_NAME, map[string]interface{}{
-				"LoginState":      model.LoggedOut,
+				"LoginState":      status.LoginStateLoggedOut,
 				"LastKeepAliveAt": 0,
 			})
 		}
