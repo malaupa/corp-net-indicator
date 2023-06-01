@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"com.telekom-mms.corp-net-indicator/internal/model"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
 const V_DBUS_SERVICE_NAME = "com.telekom_mms.oc_daemon.Daemon"

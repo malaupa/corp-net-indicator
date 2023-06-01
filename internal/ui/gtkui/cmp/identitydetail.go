@@ -6,6 +6,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/util"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
 type IdentityDetails struct {
@@ -55,7 +56,7 @@ func NewIdentityDetails(
 }
 
 // applies new status to identity details
-func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
+func (id *IdentityDetails) Apply(status *status.Status) {
 	glib.IdleAdd(func() {
 		ctx := id.ctx.Read()
 		// quick path for in progress updates
@@ -67,15 +68,11 @@ func (id *IdentityDetails) Apply(status *model.IdentityStatus) {
 			return
 		}
 		// set new status values
-		loggedIn := status.IsLoggedIn(ctx.LoggedIn)
+		loggedIn := status.LoginState.LoggedIn()
 		id.loggedInImg.SetStatus(loggedIn)
 		id.setReLoginBtn(loggedIn)
-		if status.LastKeepAliveAt != nil {
-			id.keepAliveAtLabel.SetText(util.FormatDate(status.LastKeepAliveAt))
-		}
-		if status.KerberosTGTEndTime != nil {
-			id.krbEndTimeLabel.SetText(util.FormatDate(status.KerberosTGTEndTime))
-		}
+		id.keepAliveAtLabel.SetText(util.FormatDate(&status.LastKeepAlive))
+		id.krbEndTimeLabel.SetText(util.FormatDate(&status.KerberosTGT.StartTime))
 		// set button state
 		id.setButtonAndLoginState()
 	})

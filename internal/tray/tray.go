@@ -10,8 +10,8 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/service"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/slytomcat/systray"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
 type tray struct {
@@ -74,7 +74,6 @@ func (t *tray) OpenWindow(quickConnect bool) {
 		if err != nil {
 			logger.Verbose(err)
 		}
-		t.window = nil
 		close(t.closeChan)
 	}()
 	if err != nil {
@@ -94,6 +93,7 @@ func (t *tray) closeWindow() {
 			}
 		}
 		<-t.closeChan
+		t.window = nil
 	}
 }
 
@@ -106,9 +106,8 @@ func (t *tray) Run() {
 	wSer := service.NewWatcher()
 
 	// listen to status changes
-
-	vChan, unsubscribe := vSer.SubscribeToVPN()
-	iChan := iSer.ListenToIdentity()
+	vChan := vSer.Subscribe()
+	iChan := iSer.Subscribe()
 
 	// catch user login
 	wChan := wSer.Listen()
@@ -145,8 +144,8 @@ func (t *tray) Run() {
 			logger.Verbosef("Apply identity status: %+v\n", status)
 
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-				ctx.IdentityInProgress = status.InProgress(ctx.IdentityInProgress)
-				ctx.LoggedIn = status.IsLoggedIn(ctx.LoggedIn)
+				ctx.IdentityInProgress = service.IdentityInProgress(status.LoginState)
+				ctx.LoggedIn = status.LoginState.LoggedIn()
 			})
 			t.apply(ctx)
 		case status := <-vChan:
@@ -164,7 +163,7 @@ func (t *tray) Run() {
 			}
 		case <-wChan:
 			logger.Verbose("Watcher signal received")
-			status, err := vSer.Query()
+			status, err := vSer.GetStatus()
 			if err != nil {
 				logger.Logf("DBUS error: %v\n", err)
 				os.Exit(1)
@@ -174,7 +173,7 @@ func (t *tray) Run() {
 			logger.Verbose("Received SIGINT -> closing")
 
 			t.closeWindow()
-			unsubscribe()
+			vSer.Close()
 			iSer.Close()
 			wSer.Close()
 			t.quitSystray()

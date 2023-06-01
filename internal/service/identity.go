@@ -2,57 +2,52 @@ package service
 
 import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
-	"com.telekom-mms.corp-net-indicator/internal/model"
-	"github.com/godbus/dbus/v5"
+	ic "github.com/telekom-mms/fw-id-agent/pkg/client"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
 )
 
-const (
-	IDENTITY_IFACE = "com.telekom_mms.fw_id_agent.Agent"
-	IDENTITY_PATH  = "/com/telekom_mms/fw_id_agent/Agent"
-)
+func IdentityInProgress(state status.LoginState) bool {
+	return state == status.LoginStateLoggingIn || state == status.LoginStateLoggingOut
+}
 
 type IdentityService struct {
-	dbusService
-
-	statusChan chan *model.IdentityStatus
+	client     ic.Client
+	done       chan struct{}
+	statusChan chan *status.Status
 }
 
 func NewIdentityService() *IdentityService {
-	conn, err := dbus.ConnectSessionBus()
+	client, err := ic.NewClient()
 	if err != nil {
 		panic(err)
 	}
 	return &IdentityService{
-		dbusService: dbusService{conn: conn, iface: IDENTITY_IFACE, path: IDENTITY_PATH},
-		statusChan:  make(chan *model.IdentityStatus, 10),
+		client:     client,
+		statusChan: make(chan *status.Status, 10),
+		done:       make(chan struct{}),
 	}
 }
 
 // attaches to DBUS properties changed signal, maps to status and delivers them by returned channel
-func (i *IdentityService) ListenToIdentity() <-chan *model.IdentityStatus {
+func (i *IdentityService) Subscribe() <-chan *status.Status {
 	logger.Verbose("Start listening to identity status")
-	i.listen(func(sig map[string]dbus.Variant) {
-		i.statusChan <- MapDbusDictToStruct(sig, &model.IdentityStatus{})
-	})
+	go waitAndSubscribe[*status.Status](i.client, i.statusChan, i.done)
 	return i.statusChan
 }
 
-// retrieves identity status by DBUS
-func (i *IdentityService) GetStatus() (*model.IdentityStatus, error) {
-	status, err := i.getStatus()
-	if err != nil {
-		return nil, err
-	}
-	return MapDbusDictToStruct(status, &model.IdentityStatus{}), nil
+// retrieves identity status
+func (i *IdentityService) GetStatus() (*status.Status, error) {
+	return i.client.Query()
 }
 
 // triggers identity agent login
 func (i *IdentityService) ReLogin() error {
-	return i.callMethod("ReLogin").Store()
+	return i.client.ReLogin()
 }
 
-// closes DBUS connection and signal channel
+// closes resources
 func (i *IdentityService) Close() {
-	i.conn.Close()
+	close(i.done)
+	i.client.Close()
 	close(i.statusChan)
 }

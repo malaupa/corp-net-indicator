@@ -8,14 +8,15 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/service"
 	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
 // minimal interface to interact with an ui implementation
 type StatusWindow interface {
 	Open(quickConnect bool, getServers func() ([]string, error), onReady func())
 	Close()
-	ApplyIdentityStatus(status *model.IdentityStatus)
+	ApplyIdentityStatus(status *status.Status)
 	ApplyVPNStatus(status *vpnstatus.Status)
 	NotifyError(err error)
 }
@@ -47,8 +48,8 @@ func (s *Status) Run(quickConnect bool) {
 	iSer := service.NewIdentityService()
 
 	// listen to status changes
-	vChan, unsubscribe := vSer.SubscribeToVPN()
-	iChan := iSer.ListenToIdentity()
+	vChan := vSer.Subscribe()
+	iChan := iSer.Subscribe()
 
 	// catch interrupt and clean up
 	c := make(chan os.Signal, 1)
@@ -88,8 +89,8 @@ func (s *Status) Run(quickConnect bool) {
 				logger.Verbosef("Apply identity status: %+v\n", status)
 
 				s.ctx.Write(func(ctx *model.ContextValues) {
-					ctx.IdentityInProgress = status.InProgress(ctx.IdentityInProgress)
-					ctx.LoggedIn = status.IsLoggedIn(ctx.LoggedIn)
+					ctx.IdentityInProgress = service.IdentityInProgress(status.LoginState)
+					ctx.LoggedIn = status.LoginState.LoggedIn()
 				})
 				go s.window.ApplyIdentityStatus(status)
 			case status := <-vChan:
@@ -112,7 +113,7 @@ func (s *Status) Run(quickConnect bool) {
 	logger.Verbose("Window closed")
 	close(c)
 
-	unsubscribe()
+	vSer.Close()
 	iSer.Close()
 }
 

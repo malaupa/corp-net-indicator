@@ -6,10 +6,11 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
 // holds all window parts
@@ -122,7 +123,7 @@ func (sw *statusWindow) Open(quickConnect bool, getServers func() ([]string, err
 }
 
 // applies identity status
-func (sw *statusWindow) ApplyIdentityStatus(status *model.IdentityStatus) {
+func (sw *statusWindow) ApplyIdentityStatus(status *status.Status) {
 	if sw.window == nil {
 		return
 	}

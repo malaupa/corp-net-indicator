@@ -4,9 +4,9 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/i18n"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/util"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
 type VPNDetail struct {
@@ -123,17 +123,15 @@ func (vd *VPNDetail) OnActionClicked() {
 	if vd.ctx.Read().Connected {
 		go vd.triggerAction(nil)
 	} else {
-		resultChan, err := vd.loginDialog.open()
+		err := vd.loginDialog.open(func(result *model.Credentials) {
+			if result != nil {
+				vd.triggerAction(result)
+			}
+		})
 		if err != nil {
 			// is handled in parent
 			return
 		}
-		go func() {
-			result := <-resultChan
-			if result != nil {
-				vd.triggerAction(result)
-			}
-		}()
 	}
 }
 

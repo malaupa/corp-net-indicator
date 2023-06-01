@@ -3,6 +3,7 @@ package cmp
 import (
 	"com.telekom-mms.corp-net-indicator/internal/i18n"
 	"com.telekom-mms.corp-net-indicator/internal/model"
+	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gdk/v4"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
@@ -19,105 +20,105 @@ func newLoginDialog(parent *gtk.Window, getServers func() ([]string, error)) *lo
 }
 
 // triggers dialog opening
-func (d *loginDialog) open() (<-chan *model.Credentials, error) {
+func (d *loginDialog) open(onResult func(*model.Credentials)) error {
 	servers, err := d.getServers()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	const dialogFlags = 0 |
-		gtk.DialogDestroyWithParent |
-		gtk.DialogModal |
-		gtk.DialogUseHeaderBar
+	glib.IdleAdd(func() {
 
-	d.dialog = gtk.NewDialogWithFlags("", d.parent, dialogFlags)
-	d.dialog.SetResizable(false)
+		const dialogFlags = 0 |
+			gtk.DialogDestroyWithParent |
+			gtk.DialogModal |
+			gtk.DialogUseHeaderBar
 
-	// create inputs/entries to collected user data
-	passwordLabel := gtk.NewLabel(i18n.L.Sprintf("Password"))
-	passwordLabel.SetHAlign(gtk.AlignStart)
-	passwordEntry := gtk.NewPasswordEntry()
-	passwordEntry.SetHExpand(false)
-	passwordEntry.SetVExpand(false)
-	passwordEntry.SetHAlign(gtk.AlignStart)
-	serverLabel := gtk.NewLabel(i18n.L.Sprintf("Server"))
-	serverLabel.SetHAlign(gtk.AlignStart)
-	// currently dropdown is buggy, selection is not set in every case
-	// serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
-	serverListEntry := gtk.NewComboBoxText()
-	serverListEntry.SetPopupFixedWidth(true)
-	for _, server := range servers {
-		serverListEntry.AppendText(server)
-	}
-	serverListEntry.SetActive(0)
+		d.dialog = gtk.NewDialogWithFlags("", d.parent, dialogFlags)
+		d.dialog.SetResizable(false)
 
-	// build grid to place entries
-	grid := gtk.NewGrid()
-	grid.SetColumnSpacing(10)
-	grid.SetRowSpacing(10)
-	grid.SetMarginTop(20)
-	grid.SetMarginBottom(20)
-	grid.SetMarginEnd(20)
-	grid.SetMarginStart(20)
-	grid.Attach(passwordLabel, 0, 0, 1, 1)
-	grid.Attach(passwordEntry, 1, 0, 1, 1)
-	grid.Attach(serverLabel, 0, 1, 1, 1)
-	grid.Attach(serverListEntry, 1, 1, 1, 1)
-
-	d.dialog.SetChild(grid)
-
-	// create result channel
-	result := make(chan *model.Credentials)
-
-	// create ok action with click handler
-	okBtn := d.dialog.AddButton(i18n.L.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
-	okBtn.SetSensitive(false)
-	okBtn.AddCSSClass("suggested-action")
-	okBtn.ConnectClicked(func() {
-		result <- &model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()}
-		d.close()
-	})
-
-	// connect enter in password entry to trigger ok action
-	passwordEntry.ConnectActivate(func() {
-		if okBtn.Sensitive() {
-			okBtn.Activate()
+		// create inputs/entries to collected user data
+		passwordLabel := gtk.NewLabel(i18n.L.Sprintf("Password"))
+		passwordLabel.SetHAlign(gtk.AlignStart)
+		passwordEntry := gtk.NewPasswordEntry()
+		passwordEntry.SetHExpand(false)
+		passwordEntry.SetVExpand(false)
+		passwordEntry.SetHAlign(gtk.AlignStart)
+		serverLabel := gtk.NewLabel(i18n.L.Sprintf("Server"))
+		serverLabel.SetHAlign(gtk.AlignStart)
+		// currently dropdown is buggy, selection is not set in every case
+		// serverListEntry := gtk.NewDropDownFromStrings(d.serverList)
+		serverListEntry := gtk.NewComboBoxText()
+		serverListEntry.SetPopupFixedWidth(true)
+		for _, server := range servers {
+			serverListEntry.AppendText(server)
 		}
-	})
-	// activate input validation
-	passwordEntry.ConnectChanged(func() {
-		if passwordEntry.Text() == "" {
-			okBtn.SetSensitive(false)
-		} else {
-			okBtn.SetSensitive(true)
-		}
-	})
+		serverListEntry.SetActive(0)
 
-	// create cancel button with handler to close dialog
-	ccBtn := d.dialog.AddButton(i18n.L.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
-	ccBtn.ConnectClicked(d.close)
+		// build grid to place entries
+		grid := gtk.NewGrid()
+		grid.SetColumnSpacing(10)
+		grid.SetRowSpacing(10)
+		grid.SetMarginTop(20)
+		grid.SetMarginBottom(20)
+		grid.SetMarginEnd(20)
+		grid.SetMarginStart(20)
+		grid.Attach(passwordLabel, 0, 0, 1, 1)
+		grid.Attach(passwordEntry, 1, 0, 1, 1)
+		grid.Attach(serverLabel, 0, 1, 1, 1)
+		grid.Attach(serverListEntry, 1, 1, 1, 1)
 
-	// bind esc to close dialog analogous to cancel
-	esc := gtk.NewEventControllerKey()
-	esc.SetName("dialog-escape")
-	esc.ConnectKeyPressed(func(val, code uint, state gdk.ModifierType) bool {
-		switch val {
-		case gdk.KEY_Escape:
-			if ccBtn.Sensitive() {
-				ccBtn.Activate()
-				return true
+		d.dialog.SetChild(grid)
+
+		// create ok action with click handler
+		okBtn := d.dialog.AddButton(i18n.L.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
+		okBtn.SetSensitive(false)
+		okBtn.AddCSSClass("suggested-action")
+		okBtn.ConnectClicked(func() {
+			onResult(&model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()})
+			d.close()
+		})
+
+		// connect enter in password entry to trigger ok action
+		passwordEntry.ConnectActivate(func() {
+			if okBtn.Sensitive() {
+				okBtn.Activate()
 			}
-		}
+		})
+		// activate input validation
+		passwordEntry.ConnectChanged(func() {
+			if passwordEntry.Text() == "" {
+				okBtn.SetSensitive(false)
+			} else {
+				okBtn.SetSensitive(true)
+			}
+		})
 
-		return false
+		// create cancel button with handler to close dialog
+		ccBtn := d.dialog.AddButton(i18n.L.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
+		ccBtn.ConnectClicked(d.close)
+
+		// bind esc to close dialog analogous to cancel
+		esc := gtk.NewEventControllerKey()
+		esc.SetName("dialog-escape")
+		esc.ConnectKeyPressed(func(val, code uint, state gdk.ModifierType) bool {
+			switch val {
+			case gdk.KEY_Escape:
+				if ccBtn.Sensitive() {
+					ccBtn.Activate()
+					return true
+				}
+			}
+
+			return false
+		})
+		d.dialog.AddController(esc)
+
+		// show dialog
+		d.dialog.Show()
 	})
-	d.dialog.AddController(esc)
-
-	// show dialog
-	d.dialog.Show()
 
 	// return result channel -> credentials are given for success
-	return result, nil
+	return nil
 }
 
 // closes dialog
