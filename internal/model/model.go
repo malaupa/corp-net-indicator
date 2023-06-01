@@ -6,31 +6,6 @@ import (
 	"sync"
 )
 
-// trusted state
-const (
-	TrustUnknown uint32 = iota
-	NotTrusted
-	Trusted
-)
-
-// identity agent login states
-const (
-	LoginUnknown uint32 = iota
-	LoggedOut
-	LoggingIn
-	LoggedIn
-	LoggingOut
-)
-
-// vpn connection state
-const (
-	ConnectUnknown uint32 = iota
-	Disconnected
-	Connecting
-	Connected
-	Disconnecting
-)
-
 // type to hold context values
 type ContextValues struct {
 	// is current network trusted

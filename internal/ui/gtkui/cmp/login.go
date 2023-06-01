@@ -77,6 +77,7 @@ func (d *loginDialog) open(onResult func(*model.Credentials)) error {
 		onResult(&model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()})
 		d.close()
 	})
+	// d.dialog.AddButton() is buggy -> got pointer arithmetic errors
 	d.dialog.AddActionWidget(okBtn, int(gtk.ResponseOK))
 
 	// connect enter in password entry to trigger ok action
@@ -97,6 +98,7 @@ func (d *loginDialog) open(onResult func(*model.Credentials)) error {
 	// create cancel button with handler to close dialog
 	ccBtn := gtk.NewButtonWithLabel(i18n.L.Sprintf("Cancel"))
 	ccBtn.ConnectClicked(d.close)
+	// d.dialog.AddButton() is buggy -> got pointer arithmetic errors
 	d.dialog.AddActionWidget(ccBtn, int(gtk.ResponseCancel))
 
 	// bind esc to close dialog analogous to cancel
