@@ -1,112 +1,107 @@
 package service
 
 import (
+	"strings"
+	"time"
+
+	"context"
+
 	"com.telekom-mms.corp-net-indicator/internal/logger"
-	"com.telekom-mms.corp-net-indicator/internal/model"
 	oc "github.com/T-Systems-MMS/oc-daemon/pkg/client"
-	"github.com/T-Systems-MMS/oc-daemon/pkg/logininfo"
-	"github.com/godbus/dbus/v5"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 )
 
-const (
-	VPN_IFACE = "com.telekom_mms.oc_daemon.Daemon"
-	VPN_PATH  = "/com/telekom_mms/oc_daemon/Daemon"
-)
-
-// allows to mock oc client api
-type client interface {
-	Authenticate() error
-	SetConfig(password, server string)
-	GetLoginInfo() *logininfo.LoginInfo
-}
-
-// wraps oc client
-type ocClient struct {
-	oc.Client
-}
-
-// sets necessary config attributes
-func (c *ocClient) SetConfig(password, server string) {
-	c.Config.Password = password
-	c.Config.VPNServer = server
-}
-
-// returns login info object
-func (c *ocClient) GetLoginInfo() *logininfo.LoginInfo {
-	return c.Login
+func VPNInProgress(state vpnstatus.ConnectionState) bool {
+	return state == vpnstatus.ConnectionStateConnecting || state == vpnstatus.ConnectionStateDisconnecting
 }
 
 type VPNService struct {
-	dbusService
-
-	statusChan chan *model.VPNStatus
-	ocClient   client
+	oc.Client
+	statusChan chan *vpnstatus.Status
 }
 
 func NewVPNService() *VPNService {
-	conn, err := dbus.ConnectSystemBus()
+	client, err := oc.NewClient(oc.LoadUserSystemConfig())
 	if err != nil {
 		panic(err)
 	}
 	return &VPNService{
-		dbusService: dbusService{conn: conn, iface: VPN_IFACE, path: VPN_PATH},
-		statusChan:  make(chan *model.VPNStatus, 10),
-		ocClient:    &ocClient{Client: *oc.NewClient(oc.LoadUserSystemConfig())},
+		Client:     client,
+		statusChan: make(chan *vpnstatus.Status, 10),
 	}
 }
 
 // attaches to the vpn DBUS status signal and delivers them by returned channel
-func (v *VPNService) ListenToVPN() <-chan *model.VPNStatus {
+func (v *VPNService) SubscribeToVPN() (<-chan *vpnstatus.Status, func()) {
 	logger.Verbose("Start listening to vpn status")
-	v.listen(func(result map[string]dbus.Variant) {
-		v.statusChan <- MapDbusDictToStruct(result, &model.VPNStatus{})
-	})
-	return v.statusChan
+	ctx, close := context.WithCancel(context.Background())
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				v.close()
+				return
+			default:
+			}
+			status, err := v.Query()
+			if err != nil && !strings.Contains(err.Error(), ERR_SUFFIX) {
+				logger.Logf("DBUS error: %v\n", err)
+			}
+			if status != nil {
+				select {
+				case v.statusChan <- status:
+				case <-ctx.Done():
+					v.close()
+					return
+				}
+				break
+			}
+			logger.Verbosef("Wait %d seconds for service to come up...", DEBOUNCE)
+			time.Sleep(time.Second * DEBOUNCE)
+		}
+
+		statusChan, err := v.Subscribe()
+		if err != nil {
+			panic(err)
+		}
+
+		for {
+			select {
+			case status := <-statusChan:
+				v.statusChan <- status
+			case <-ctx.Done():
+				v.close()
+				return
+			}
+		}
+	}()
+	return v.statusChan, close
 }
 
 // triggers VPN connect
-func (v *VPNService) Connect(password string, server string) error {
-	v.ocClient.SetConfig(password, server)
+func (v *VPNService) ConnectWithPasswordAndServer(password string, server string) error {
+	config := v.GetConfig()
+	config.Password = password
+	config.VPNServer = server
+	v.SetConfig(config)
+	// v.SetLogin(&logininfo.LoginInfo{})
 
-	err := v.ocClient.Authenticate()
+	err := v.Authenticate()
 	if err != nil {
 		return err
 	}
-	info := v.ocClient.GetLoginInfo()
 
-	return v.callMethod("Connect", info.Cookie, info.Host, info.ConnectURL, info.Fingerprint, info.Resolve).Store()
-	// return v.callMethod("Connect", "info.Cookie", "info.Host", "info.ConnectURL", "info.Fingerprint", "info.Resolve").Store()
+	return v.Connect()
 }
 
-// triggers VPN disconnect
-func (v *VPNService) Disconnect() error {
-	return v.callMethod("Disconnect").Store()
-}
-
-// retrieves vpn status by DBUS
-func (v *VPNService) GetStatus() (*model.VPNStatus, error) {
-	status, err := v.getStatus()
-	if err != nil {
-		return nil, err
-	}
-	return MapDbusDictToStruct(status, &model.VPNStatus{}), nil
-}
-
-// retrieves server list by DBUS
-func (v *VPNService) GetServerList() ([]string, error) {
-	servers, err := v.getProp("Servers")
-	if err != nil {
-		return []string{}, err
-	}
-	val := servers.Value()
-	if list, ok := val.([]string); ok {
-		return list, nil
-	}
-	return []string{}, nil
+// Returns servers to connect to
+func (v *VPNService) GetServers() ([]string, error) {
+	result, err := v.Query()
+	return result.Servers, err
 }
 
 // closes DBUS connection and signal channel
-func (v *VPNService) Close() {
-	v.conn.Close()
+func (v *VPNService) close() {
+	v.Close()
 	close(v.statusChan)
 }

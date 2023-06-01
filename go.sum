@@ -2,6 +2,8 @@ github.com/T-Systems-MMS/oc-daemon v0.0.0-20230512172702-4f40a1d36f16 h1:zbR94TN
 github.com/T-Systems-MMS/oc-daemon v0.0.0-20230512172702-4f40a1d36f16/go.mod h1:cV/9yzqFCmfe9ZyC3LzEyIQQM8LwBS2HJ72V8iXCZ7I=
 github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f h1:CNfQjJvRLK1aGFtxhUrsMGkx5fsrFRVS92I66ORdfZw=
 github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f/go.mod h1:cV/9yzqFCmfe9ZyC3LzEyIQQM8LwBS2HJ72V8iXCZ7I=
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230530070231-c723160b7524 h1:1g7w4U5L2WiERSsJuGDXp735FXckhp7BjL4bFsdM5jE=
+github.com/T-Systems-MMS/oc-daemon v0.0.0-20230530070231-c723160b7524/go.mod h1:cV/9yzqFCmfe9ZyC3LzEyIQQM8LwBS2HJ72V8iXCZ7I=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

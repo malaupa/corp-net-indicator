@@ -8,9 +8,6 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-const DEBOUNCE = 5
-const ERR_SUFFIX = "was not provided by any .service files"
-
 type dbusService struct {
 	conn *dbus.Conn
 
@@ -85,11 +82,6 @@ func (d *dbusService) getStatus() (map[string]dbus.Variant, error) {
 		return nil, err
 	}
 	return status, nil
-}
-
-func (d *dbusService) getProp(name string) (result dbus.Variant, err error) {
-	err = d.getObject().Call("org.freedesktop.DBus.Properties.Get", 0, d.iface, name).Store(&result)
-	return
 }
 
 func (d *dbusService) callMethod(method string, args ...any) *dbus.Call {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"com.telekom-mms.corp-net-indicator/internal/model"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
@@ -33,6 +34,7 @@ func (a vpnAgent) Connect(cookie, host, connectUrl, fingerprint, resolve string)
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
 			"ConnectionState": model.Connected,
 			"ConnectedAt":     now,
+			"OCRunning":       vpnstatus.OCRunningRunning,
 		})
 		if iA != nil && a.simulate {
 			time.Sleep(time.Second * 5)
@@ -62,6 +64,7 @@ func (a vpnAgent) Disconnect() *dbus.Error {
 		a.props.SetMustMany(V_DBUS_SERVICE_NAME, map[string]interface{}{
 			"ConnectionState": model.Disconnected,
 			"ConnectedAt":     0,
+			"OCRunning":       vpnstatus.OCRunningNotRunning,
 		})
 		if iA != nil && a.simulate {
 			time.Sleep(time.Second * 5)
@@ -90,17 +93,19 @@ func NewVPNServer(simulate bool) *dbus.Conn {
 	// identity properties
 	a.props, err = prop.Export(conn, V_DBUS_OBJECT_PATH, prop.Map{
 		V_DBUS_SERVICE_NAME: {
-			"TrustedNetwork":  {Value: model.NotTrusted, Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"ConnectionState": {Value: model.ConnectUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"TrustedNetwork":  {Value: vpnstatus.TrustedNetworkNotTrusted, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"ConnectionState": {Value: vpnstatus.ConnectionStateUnknown, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"IP":              {Value: "127.0.0.1", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"Device":          {Value: "vpn-tun0", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"ConnectedAt":     {Value: now, Writable: false, Emit: prop.EmitTrue, Callback: nil},
-			"CertExpiresAt":   {Value: now + 60*60*24*365, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			// "CertExpiresAt":   {Value: now + 60*60*24*365, Writable: false, Emit: prop.EmitTrue, Callback: nil},
 			"Servers": {Value: []string{
 				"server1.example.com",
 				"server2.example.com",
 				"server3.example.com",
-			}, Writable: false, Emit: prop.EmitConst, Callback: nil},
+			}, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"OCRunning": {Value: vpnstatus.OCRunningNotRunning, Writable: false, Emit: prop.EmitTrue, Callback: nil},
+			"VPNConfig": {Value: "", Writable: false, Emit: prop.EmitTrue, Callback: nil},
 		},
 	})
 	if err != nil {

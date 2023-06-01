@@ -10,6 +10,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/service"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/slytomcat/systray"
 )
 
@@ -105,7 +106,8 @@ func (t *tray) Run() {
 	wSer := service.NewWatcher()
 
 	// listen to status changes
-	vChan := vSer.ListenToVPN()
+
+	vChan, unsubscribe := vSer.SubscribeToVPN()
 	iChan := iSer.ListenToIdentity()
 
 	// catch user login
@@ -151,9 +153,9 @@ func (t *tray) Run() {
 			logger.Verbosef("Apply vpn status: %+v\n", status)
 
 			ctx := t.ctx.Write(func(ctx *model.ContextValues) {
-				ctx.VPNInProgress = status.InProgress(ctx.VPNInProgress)
-				ctx.Connected = status.IsConnected(ctx.Connected)
-				ctx.TrustedNetwork = status.IsTrustedNetwork(ctx.TrustedNetwork)
+				ctx.VPNInProgress = service.VPNInProgress(status.ConnectionState)
+				ctx.Connected = status.ConnectionState.Connected()
+				ctx.TrustedNetwork = status.TrustedNetwork.Trusted()
 			})
 			t.apply(ctx)
 			// open window, if needed
@@ -162,7 +164,7 @@ func (t *tray) Run() {
 			}
 		case <-wChan:
 			logger.Verbose("Watcher signal received")
-			status, err := vSer.GetStatus()
+			status, err := vSer.Query()
 			if err != nil {
 				logger.Logf("DBUS error: %v\n", err)
 				os.Exit(1)
@@ -172,7 +174,7 @@ func (t *tray) Run() {
 			logger.Verbose("Received SIGINT -> closing")
 
 			t.closeWindow()
-			vSer.Close()
+			unsubscribe()
 			iSer.Close()
 			wSer.Close()
 			t.quitSystray()
@@ -214,9 +216,9 @@ func (t *tray) apply(ctx model.ContextValues) {
 }
 
 // opens window if needed
-func (t *tray) openWindowIfNeeded(status *model.VPNStatus) bool {
-	if status.TrustedNetwork != nil && *status.TrustedNetwork == model.NotTrusted &&
-		status.ConnectionState != nil && *status.ConnectionState <= model.Disconnected {
+func (t *tray) openWindowIfNeeded(status *vpnstatus.Status) bool {
+	if status.TrustedNetwork == vpnstatus.TrustedNetworkNotTrusted &&
+		status.ConnectionState <= vpnstatus.ConnectionStateDisconnected {
 		t.OpenWindow(true)
 		return true
 	}

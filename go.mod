@@ -3,7 +3,7 @@ module com.telekom-mms.corp-net-indicator
 go 1.20
 
 require (
-	github.com/T-Systems-MMS/oc-daemon v0.0.0-20230517135325-2263024b2c2f
+	github.com/T-Systems-MMS/oc-daemon v0.0.0-20230530070231-c723160b7524
 	github.com/diamondburned/gotk4/pkg v0.0.5
 	github.com/slytomcat/systray v1.10.1
 	golang.org/x/text v0.8.0

@@ -6,6 +6,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui/cmp"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gio/v2"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
@@ -129,7 +130,7 @@ func (sw *statusWindow) ApplyIdentityStatus(status *model.IdentityStatus) {
 }
 
 // applies vpn status
-func (sw *statusWindow) ApplyVPNStatus(status *model.VPNStatus) {
+func (sw *statusWindow) ApplyVPNStatus(status *vpnstatus.Status) {
 	if sw.window == nil {
 		return
 	}

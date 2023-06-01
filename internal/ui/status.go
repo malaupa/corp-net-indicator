@@ -8,6 +8,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/service"
 	"com.telekom-mms.corp-net-indicator/internal/ui/gtkui"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 )
 
 // minimal interface to interact with an ui implementation
@@ -15,7 +16,7 @@ type StatusWindow interface {
 	Open(quickConnect bool, getServers func() ([]string, error), onReady func())
 	Close()
 	ApplyIdentityStatus(status *model.IdentityStatus)
-	ApplyVPNStatus(status *model.VPNStatus)
+	ApplyVPNStatus(status *vpnstatus.Status)
 	NotifyError(err error)
 }
 
@@ -46,14 +47,14 @@ func (s *Status) Run(quickConnect bool) {
 	iSer := service.NewIdentityService()
 
 	// listen to status changes
-	vChan := vSer.ListenToVPN()
+	vChan, unsubscribe := vSer.SubscribeToVPN()
 	iChan := iSer.ListenToIdentity()
 
 	// catch interrupt and clean up
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
-	s.window.Open(quickConnect, vSer.GetServerList, func() {
+	s.window.Open(quickConnect, vSer.GetServers, func() {
 		for {
 			select {
 			// handle window clicks
@@ -64,7 +65,7 @@ func (s *Status) Run(quickConnect bool) {
 				if connect != nil {
 					logger.Verbose("Open dialog to connect to VPN")
 
-					if err := vSer.Connect(connect.Password, connect.Server); err != nil {
+					if err := vSer.ConnectWithPasswordAndServer(connect.Password, connect.Server); err != nil {
 						s.handleDBUSError(err)
 					}
 				} else {
@@ -95,9 +96,9 @@ func (s *Status) Run(quickConnect bool) {
 				logger.Verbosef("Apply vpn status: %+v\n", status)
 
 				s.ctx.Write(func(ctx *model.ContextValues) {
-					ctx.VPNInProgress = status.InProgress(ctx.VPNInProgress)
-					ctx.Connected = status.IsConnected(ctx.Connected)
-					ctx.TrustedNetwork = status.IsTrustedNetwork(ctx.TrustedNetwork)
+					ctx.VPNInProgress = service.VPNInProgress(status.ConnectionState)
+					ctx.Connected = status.ConnectionState.Connected()
+					ctx.TrustedNetwork = status.TrustedNetwork.Trusted()
 				})
 				go s.window.ApplyVPNStatus(status)
 			case <-c:
@@ -111,7 +112,7 @@ func (s *Status) Run(quickConnect bool) {
 	logger.Verbose("Window closed")
 	close(c)
 
-	vSer.Close()
+	unsubscribe()
 	iSer.Close()
 }
 

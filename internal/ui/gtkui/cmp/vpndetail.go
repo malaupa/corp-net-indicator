@@ -4,6 +4,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/i18n"
 	"com.telekom-mms.corp-net-indicator/internal/model"
 	"com.telekom-mms.corp-net-indicator/internal/util"
+	"github.com/T-Systems-MMS/oc-daemon/pkg/vpnstatus"
 	"github.com/diamondburned/gotk4/pkg/core/glib"
 	"github.com/diamondburned/gotk4/pkg/gtk/v4"
 )
@@ -77,7 +78,7 @@ func NewVPNDetail(
 }
 
 // applies new vpn status and calls afterApply after them
-func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func(vpnConnected bool)) {
+func (vd *VPNDetail) Apply(status *vpnstatus.Status, afterApply func(vpnConnected bool)) {
 	glib.IdleAdd(func() {
 		ctx := vd.ctx.Read()
 		if ctx.IdentityInProgress || ctx.VPNInProgress {
@@ -88,21 +89,13 @@ func (vd *VPNDetail) Apply(status *model.VPNStatus, afterApply func(vpnConnected
 			vd.identityDetail.setReLoginBtn(false)
 			return
 		}
-		connected := status.IsConnected(ctx.Connected)
+		connected := status.ConnectionState.Connected()
 		vd.connectedImg.SetStatus(connected)
-		vd.applyTrustedNetwork(status.IsTrustedNetwork(ctx.TrustedNetwork))
-		if status.ConnectedAt != nil {
-			vd.connectedAtLabel.SetText(util.FormatDate(status.ConnectedAt))
-		}
-		if status.Device != nil {
-			vd.deviceLabel.SetText(util.FormatValue(status.Device))
-		}
-		if status.IP != nil {
-			vd.ipLabel.SetText(util.FormatValue(status.IP))
-		}
-		if status.CertExpiresAt != nil {
-			vd.certExpiresLabel.SetText(util.FormatDate(status.CertExpiresAt))
-		}
+		vd.applyTrustedNetwork(status.TrustedNetwork.Trusted())
+		vd.connectedAtLabel.SetText(util.FormatDate(&status.ConnectedAt))
+		vd.deviceLabel.SetText(util.FormatValue(&status.Device))
+		vd.ipLabel.SetText(util.FormatValue(&status.IP))
+		vd.certExpiresLabel.SetText(util.FormatDate(nil)) // TODO
 		vd.SetButtonsAfterProgress()
 		afterApply(connected)
 	})
