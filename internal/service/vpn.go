@@ -2,7 +2,6 @@ package service
 
 import (
 	oc "github.com/telekom-mms/oc-daemon/pkg/client"
-	"github.com/telekom-mms/oc-daemon/pkg/logininfo"
 	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
 )
 
@@ -39,12 +38,12 @@ func (v *VPNService) ConnectWithPasswordAndServer(password string, server string
 	config.Password = password
 	config.VPNServer = server
 	v.client.SetConfig(config)
-	v.client.SetLogin(&logininfo.LoginInfo{})
+	// v.client.SetLogin(&logininfo.LoginInfo{})
 
-	// err := v.client.Authenticate()
-	// if err != nil {
-	// 	return err
-	// }
+	err := v.client.Authenticate()
+	if err != nil {
+		return err
+	}
 
 	return v.client.Connect()
 }

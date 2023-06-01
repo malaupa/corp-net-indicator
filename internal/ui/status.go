@@ -28,6 +28,7 @@ type Status struct {
 
 	connectDisconnectClicked chan *model.Credentials
 	reLoginClicked           chan bool
+	done                     chan struct{}
 
 	window StatusWindow
 }
@@ -37,6 +38,7 @@ func NewStatus() *Status {
 		ctx:                      model.NewContext(),
 		connectDisconnectClicked: make(chan *model.Credentials),
 		reLoginClicked:           make(chan bool),
+		done:                     make(chan struct{}),
 	}
 	s.window = gtkui.NewStatusWindow(s.ctx, s.connectDisconnectClicked, s.reLoginClicked)
 	return s
@@ -104,14 +106,16 @@ func (s *Status) Run(quickConnect bool) {
 				go s.window.ApplyVPNStatus(status)
 			case <-c:
 				logger.Verbose("Received SIGINT -> closing")
-				s.window.Close()
+				defer s.window.Close()
+				return
+			case <-s.done:
 				return
 			}
 		}
 	})
 
 	logger.Verbose("Window closed")
-	close(c)
+	close(s.done)
 
 	vSer.Close()
 	iSer.Close()

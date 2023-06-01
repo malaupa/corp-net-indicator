@@ -70,13 +70,14 @@ func (d *loginDialog) open(onResult func(*model.Credentials)) error {
 		d.dialog.SetChild(grid)
 
 		// create ok action with click handler
-		okBtn := d.dialog.AddButton(i18n.L.Sprintf("Connect"), int(gtk.ResponseOK)).(*gtk.Button)
+		okBtn := gtk.NewButtonWithLabel(i18n.L.Sprintf("Connect"))
 		okBtn.SetSensitive(false)
 		okBtn.AddCSSClass("suggested-action")
 		okBtn.ConnectClicked(func() {
 			onResult(&model.Credentials{Password: passwordEntry.Text(), Server: serverListEntry.ActiveText()})
 			d.close()
 		})
+		d.dialog.AddActionWidget(okBtn, int(gtk.ResponseOK))
 
 		// connect enter in password entry to trigger ok action
 		passwordEntry.ConnectActivate(func() {
@@ -94,8 +95,9 @@ func (d *loginDialog) open(onResult func(*model.Credentials)) error {
 		})
 
 		// create cancel button with handler to close dialog
-		ccBtn := d.dialog.AddButton(i18n.L.Sprintf("Cancel"), int(gtk.ResponseCancel)).(*gtk.Button)
+		ccBtn := gtk.NewButtonWithLabel(i18n.L.Sprintf("Cancel"))
 		ccBtn.ConnectClicked(d.close)
+		d.dialog.AddActionWidget(ccBtn, int(gtk.ResponseCancel))
 
 		// bind esc to close dialog analogous to cancel
 		esc := gtk.NewEventControllerKey()
