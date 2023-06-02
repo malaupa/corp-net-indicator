@@ -1,11 +1,9 @@
 package main
 
-import testserver "com.telekom-mms.corp-net-indicator/internal/schema"
-
 func main() {
-	iS := testserver.NewIdentityServer(true)
+	iS := NewIdentityServer(true)
 	defer iS.Close()
-	vS := testserver.NewVPNServer(true)
+	vS := NewVPNServer(true)
 	defer vS.Close()
 
 	select {}

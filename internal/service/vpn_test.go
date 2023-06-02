@@ -1,125 +1,119 @@
 package service
 
-// func TestGetVPNStatus(t *testing.T) {
-// 	s := testserver.NewVPNServer(false)
-// 	defer s.Close()
+import (
+	"testing"
 
-// 	c := NewVPNService()
-// 	defer c.Close()
+	"github.com/stretchr/testify/assert"
+	oc "github.com/telekom-mms/oc-daemon/pkg/client"
+	"github.com/telekom-mms/oc-daemon/pkg/vpnstatus"
+)
 
-// 	status, err := c.Query()
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, &model.VPNStatus{
-// 		TrustedNetwork:  test.Pointer(model.NotTrusted),
-// 		ConnectionState: test.Pointer(model.ConnectUnknown),
-// 		IP:              test.Pointer("127.0.0.1"),
-// 		Device:          test.Pointer("vpn-tun0"),
-// 		ConnectedAt:     test.Pointer(int64(0)),
-// 		CertExpiresAt:   test.Pointer(int64(60 * 60 * 24 * 365)),
-// 	}, status)
-// }
+type testVPNClient struct {
+	oc.Client
+	queryCalled      bool
+	authCalled       bool
+	connectCalled    bool
+	disconnectCalled bool
+	closeCalled      bool
+	status           chan *vpnstatus.Status
+	config           *oc.Config
+}
 
-// func TestGetVPNStatusError(t *testing.T) {
-// 	s := testserver.NewVPNServer(false)
-// 	c := NewVPNService()
-// 	defer c.Close()
+func (c *testVPNClient) Query() (*vpnstatus.Status, error) {
+	c.queryCalled = true
+	return &vpnstatus.Status{Servers: []string{"server"}}, nil
+}
+func (c *testVPNClient) Authenticate() error {
+	c.authCalled = true
+	return nil
+}
+func (c *testVPNClient) Connect() error {
+	c.connectCalled = true
+	return nil
+}
+func (c *testVPNClient) Disconnect() error {
+	c.disconnectCalled = true
+	return nil
+}
+func (c *testVPNClient) Close() error {
+	c.closeCalled = true
+	return nil
+}
+func (c *testVPNClient) Ping() error {
+	return nil
+}
+func (c *testVPNClient) Subscribe() (chan *vpnstatus.Status, error) {
+	return c.status, nil
+}
+func (c *testVPNClient) GetConfig() *oc.Config {
+	return c.config
+}
+func (c *testVPNClient) SetConfig(config *oc.Config) {
+	c.config = config
+}
+func setupVPNClient() *testVPNClient {
+	testC := &testVPNClient{status: make(chan *vpnstatus.Status), config: &oc.Config{}}
+	newVPNClient = func() (oc.Client, error) { return testC, nil }
+	return testC
+}
 
-// 	s.Close()
+func TestGetVPNStatus(t *testing.T) {
+	setupVPNClient()
+	c := NewVPNService()
+	defer c.Close()
 
-// 	status, err := c.GetStatus()
-// 	assert.EqualError(t, err, "The name com.telekom_mms.oc_daemon.Daemon was not provided by any .service files")
-// 	assert.Nil(t, status)
-// }
+	status, err := c.GetStatus()
+	assert.Nil(t, err)
+	assert.Equal(t, &vpnstatus.Status{Servers: []string{"server"}}, status)
+}
 
-// type testClient struct {
-// 	oc.DBusClient
-// 	connectCalled    bool
-// 	disconnectCalled bool
-// }
+func TestVPNSubscribe(t *testing.T) {
+	testC := setupVPNClient()
+	c := NewVPNService()
 
-// func (c *testClient) GetConfig() *oc.Config {
-// 	return &oc.Config{}
-// }
+	status := &vpnstatus.Status{}
+	statusChan := c.Subscribe()
+	testC.status <- status
+	assert.Equal(t, status, <-statusChan)
+	c.Close()
+	assert.Equal(t, true, testC.closeCalled)
+}
 
-// func (c *testClient) Authenticate() error {
-// 	return nil
-// }
+func TestConnect(t *testing.T) {
+	testC := setupVPNClient()
+	c := NewVPNService()
 
-// func (c *testClient) GetLogin() *logininfo.LoginInfo {
-// 	return &logininfo.LoginInfo{Cookie: "cookie", Host: "host", ConnectURL: "connectURL", Fingerprint: "fingerprint", Resolve: "resolve"}
-// }
+	err := c.ConnectWithPasswordAndServer("pass", "server")
+	assert.Nil(t, err)
+	assert.Equal(t, true, testC.connectCalled)
+	assert.Equal(t, true, testC.authCalled)
+	assert.Equal(t, &oc.Config{Password: "pass", VPNServer: "server"}, testC.config)
 
-// func (c *testClient) Query() (*vpnstatus.Status, error) {
-// 	return &vpnstatus.Status{
-// 		TrustedNetwork:  vpnstatus.TrustedNetworkNotTrusted,
-// 		ConnectionState: vpnstatus.ConnectionStateDisconnected,
-// 		OCRunning:       vpnstatus.OCRunningNotRunning}, nil
-// }
+	c.Close()
+	assert.Equal(t, true, testC.closeCalled)
+}
 
-// func (c *testClient) Connect() error {
-// 	c.connectCalled = true
-// 	return nil
-// }
+func TestDisconnect(t *testing.T) {
+	testC := setupVPNClient()
+	c := NewVPNService()
 
-// func (c *testClient) Disconnect() error {
-// 	c.disconnectCalled = true
-// 	return nil
-// }
+	err := c.Disconnect()
+	assert.Nil(t, err)
+	assert.Equal(t, true, testC.disconnectCalled)
 
-// func TestConnectAndDisconnect(t *testing.T) {
-// 	assert := assert.New(t)
-// 	s := testserver.NewVPNServer(false)
-// 	defer s.Close()
+	c.Close()
+	assert.Equal(t, true, testC.closeCalled)
+}
 
-// 	c := NewVPNService()
-// 	c.ocClient = &testClient{}
-// 	defer c.Close()
+func TestGetServers(t *testing.T) {
+	testC := setupVPNClient()
+	c := NewVPNService()
 
-// 	ready := make(chan struct{})
-// 	msgs := make(chan []model.VPNStatus, 1)
-// 	connected := make(chan struct{})
-// 	go func() {
-// 		sC := c.ListenToVPN()
-// 		var results []model.VPNStatus
-// 		count := 0
-// 		for status := range sC {
-// 			count++
-// 			if count == 1 {
-// 				close(ready)
-// 				continue
-// 			}
-// 			results = append(results, *status)
-// 			if count == 5 {
-// 				break
-// 			}
-// 			if count == 3 {
-// 				close(connected)
-// 			}
-// 		}
-// 		msgs <- results
-// 	}()
+	servers, err := c.GetServers()
+	assert.Nil(t, err)
+	assert.Equal(t, []string{"server"}, servers)
+	assert.Equal(t, true, testC.queryCalled)
 
-// 	<-ready
-// 	assert.Nil(c.Connect("pass", "server"))
-// 	go func() {
-// 		<-connected
-// 		assert.Nil(c.Disconnect())
-// 	}()
-
-// 	results := <-msgs
-// 	assert.Equal(4, len(results))
-// 	assert.Equal(model.VPNStatus{
-// 		ConnectionState: test.Pointer(model.Connecting),
-// 	}, results[0])
-// 	assert.Equal(model.VPNStatus{
-// 		ConnectionState: test.Pointer(model.Connected),
-// 		ConnectedAt:     test.Pointer(int64(0)),
-// 	}, results[1])
-// 	assert.Equal(model.VPNStatus{
-// 		ConnectionState: test.Pointer(model.Disconnecting),
-// 	}, results[2])
-// 	assert.Equal(model.VPNStatus{
-// 		ConnectionState: test.Pointer(model.Disconnected),
-// 		ConnectedAt:     test.Pointer(int64(0)),
-// 	}, results[3])
-// }
+	c.Close()
+	assert.Equal(t, true, testC.closeCalled)
+}

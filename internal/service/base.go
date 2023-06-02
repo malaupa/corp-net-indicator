@@ -6,7 +6,7 @@ import (
 	"com.telekom-mms.corp-net-indicator/internal/logger"
 )
 
-const pollInterval = 5
+var pollInterval time.Duration = 5
 
 type client[T interface{}] interface {
 	Ping() error

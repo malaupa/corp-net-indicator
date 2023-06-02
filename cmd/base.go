@@ -1,4 +1,4 @@
-package testserver
+package main
 
 import (
 	"github.com/godbus/dbus/v5/prop"

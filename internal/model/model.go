@@ -1,8 +1,6 @@
 package model
 
 import (
-	"fmt"
-	"reflect"
 	"sync"
 )
 
@@ -33,7 +31,7 @@ func NewContext() *Context {
 }
 
 // provides writer to write context values
-func (c *Context) Write(writer func(ctx *ContextValues)) ContextValues {
+func (c *Context) Write(writer func(values *ContextValues)) ContextValues {
 	c.lock.Lock()
 	defer c.lock.Unlock()
 	writer(&c.values)
@@ -51,36 +49,4 @@ func (c *Context) Read() ContextValues {
 type Credentials struct {
 	Password string
 	Server   string
-}
-
-// expands pointers to values in structs
-func ToString[T interface{}](structType T) string {
-	result := "{"
-	// unwrap result struct
-	elem := reflect.ValueOf(structType).Elem()
-	elemType := elem.Type()
-	// iterate over struct fields
-	for i := 0; i < elem.NumField(); i++ {
-		// get and check field value
-		fieldValue := elem.Field(i)
-		if !fieldValue.IsValid() {
-			continue
-		}
-		// add separator
-		if i != 0 {
-			result += ", "
-		}
-		// get field definition
-		field := elemType.Field(i)
-		var val any = fieldValue
-		if field.Type.Kind() == reflect.Pointer {
-			if fieldValue.IsNil() {
-				val = "<nil>"
-			} else {
-				val = fieldValue.Elem()
-			}
-		}
-		result += fmt.Sprintf("%s: %v", field.Name, val)
-	}
-	return result + "}"
 }

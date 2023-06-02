@@ -1,71 +1,76 @@
-package service_test
+package service
 
-// func TestGetStatus(t *testing.T) {
-// 	s := testserver.NewIdentityServer(false)
-// 	defer s.Close()
+import (
+	"testing"
 
-// 	c := service.NewIdentityService()
-// 	defer c.Close()
+	"github.com/stretchr/testify/assert"
+	ic "github.com/telekom-mms/fw-id-agent/pkg/client"
+	"github.com/telekom-mms/fw-id-agent/pkg/status"
+)
 
-// 	status, err := c.GetStatus()
-// 	assert.Nil(t, err)
-// 	assert.Equal(t, &model.IdentityStatus{
-// 		TrustedNetwork:       test.Pointer(model.TrustUnknown),
-// 		LoginState:           test.Pointer(model.LoginUnknown),
-// 		LastKeepAliveAt:      test.Pointer(int64(60 * 60)),
-// 		KerberosTGTStartTime: test.Pointer(int64(0)),
-// 		KerberosTGTEndTime:   test.Pointer(int64(60 * 60)),
-// 	}, status)
-// }
+type testIdentityClient struct {
+	ic.Client
+	queryCalled   bool
+	reLoginCalled bool
+	closeCalled   bool
+	status        chan *status.Status
+}
 
-// func TestGetStatusError(t *testing.T) {
-// 	s := testserver.NewIdentityServer(false)
-// 	c := service.NewIdentityService()
-// 	defer c.Close()
+func (c *testIdentityClient) Query() (*status.Status, error) {
+	c.queryCalled = true
+	return nil, nil
+}
+func (c *testIdentityClient) ReLogin() error {
+	c.reLoginCalled = true
+	return nil
+}
+func (c *testIdentityClient) Close() error {
+	c.closeCalled = true
+	return nil
+}
+func (c *testIdentityClient) Ping() error {
+	return nil
+}
+func (c *testIdentityClient) Subscribe() (chan *status.Status, error) {
+	return c.status, nil
+}
+func setupIdentityClient() *testIdentityClient {
+	testC := &testIdentityClient{status: make(chan *status.Status)}
+	newIdentityClient = func() (ic.Client, error) { return testC, nil }
+	return testC
+}
 
-// 	s.Close()
+func TestGetIdentityStatus(t *testing.T) {
+	testC := setupIdentityClient()
+	c := NewIdentityService()
 
-// 	status, err := c.GetStatus()
-// 	assert.EqualError(t, err, "The name com.telekom_mms.fw_id_agent.Agent was not provided by any .service files")
-// 	assert.Nil(t, status)
-// }
+	status, err := c.GetStatus()
+	c.Close()
+	assert.Nil(t, err)
+	assert.Nil(t, status)
+	assert.Equal(t, true, testC.queryCalled)
+	assert.Equal(t, true, testC.closeCalled)
+}
 
-// func TestReLogin(t *testing.T) {
-// 	s := testserver.NewIdentityServer(false)
-// 	defer s.Close()
+func TestReLogin(t *testing.T) {
+	testC := setupIdentityClient()
+	c := NewIdentityService()
 
-// 	c := service.NewIdentityService()
-// 	defer c.Close()
+	err := c.ReLogin()
+	c.Close()
+	assert.Nil(t, err)
+	assert.Equal(t, true, testC.reLoginCalled)
+	assert.Equal(t, true, testC.closeCalled)
+}
 
-// 	ready := make(chan struct{})
-// 	msgs := make(chan []model.IdentityStatus, 1)
-// 	go func() {
-// 		sC := c.ListenToIdentity()
-// 		var results []model.IdentityStatus
-// 		count := 0
-// 		for status := range sC {
-// 			count++
-// 			if count == 1 {
-// 				close(ready)
-// 				continue
-// 			}
-// 			results = append(results, *status)
-// 			if count == 3 {
-// 				break
-// 			}
-// 		}
-// 		msgs <- results
-// 	}()
-// 	<-ready
-// 	assert.Nil(t, c.ReLogin())
+func TestIdentitySubscribe(t *testing.T) {
+	testC := setupIdentityClient()
+	c := NewIdentityService()
 
-// 	results := <-msgs
-// 	assert.Equal(t, 2, len(results))
-// 	assert.Equal(t, model.IdentityStatus{
-// 		LoginState: test.Pointer(model.LoggingIn),
-// 	}, results[0])
-// 	assert.Equal(t, model.IdentityStatus{
-// 		LoginState:      test.Pointer(model.LoggedIn),
-// 		LastKeepAliveAt: test.Pointer(int64(60 * 60)),
-// 	}, results[1])
-// }
+	status := &status.Status{}
+	statusChan := c.Subscribe()
+	testC.status <- status
+	assert.Equal(t, status, <-statusChan)
+	c.Close()
+	assert.Equal(t, true, testC.closeCalled)
+}

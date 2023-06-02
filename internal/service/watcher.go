@@ -10,18 +10,28 @@ const (
 	SIGNAL string = IFACE + ".Unlock"
 )
 
+type dbusConn interface {
+	AddMatchSignal(options ...dbus.MatchOption) error
+	Signal(ch chan<- *dbus.Signal)
+	Close() error
+}
+
+var connectDbus = func() (dbusConn, error) {
+	return dbus.ConnectSystemBus()
+}
+
 type Watcher struct {
-	conn   *dbus.Conn
+	conn   dbusConn
 	signal chan struct{}
 }
 
 // Creates new watcher
 func NewWatcher() *Watcher {
-	conn, err := dbus.ConnectSystemBus()
+	conn, err := connectDbus()
 	if err != nil {
 		panic(err)
 	}
-	return &Watcher{conn: conn, signal: make(chan struct{})}
+	return &Watcher{conn: conn, signal: make(chan struct{}, 1)}
 }
 
 // Listen to login events

@@ -16,8 +16,12 @@ type IdentityService struct {
 	statusChan chan *status.Status
 }
 
+var newIdentityClient = func() (ic.Client, error) {
+	return ic.NewClient()
+}
+
 func NewIdentityService() *IdentityService {
-	client, err := ic.NewClient()
+	client, err := newIdentityClient()
 	if err != nil {
 		panic(err)
 	}

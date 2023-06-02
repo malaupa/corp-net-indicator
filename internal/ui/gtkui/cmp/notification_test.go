@@ -19,3 +19,5 @@ func TestNotification(t *testing.T) {
 	n.Show("Hu!")
 	assert.Equal(t, n.Revealer.RevealChild(), true)
 }
+
+// TODO add assertions and tests

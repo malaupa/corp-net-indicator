@@ -15,8 +15,12 @@ type VPNService struct {
 	statusChan chan *vpnstatus.Status
 }
 
+var newVPNClient = func() (oc.Client, error) {
+	return oc.NewClient(oc.LoadUserSystemConfig())
+}
+
 func NewVPNService() *VPNService {
-	client, err := oc.NewClient(oc.LoadUserSystemConfig())
+	client, err := newVPNClient()
 	if err != nil {
 		panic(err)
 	}
