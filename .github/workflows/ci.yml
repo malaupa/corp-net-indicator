@@ -51,7 +51,7 @@ jobs:
           path: coverage.html
           retention-days: 5
 
-      - name: Test and Build
+      - name: Build
         uses: goreleaser/goreleaser-action@v4
         with:
           distribution: goreleaser
