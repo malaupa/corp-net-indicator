@@ -34,6 +34,9 @@ func (i identityAgent) ReLogin() *dbus.Error {
 			"LastKeepAliveAt": now,
 		})
 	}()
+	if false {
+		return &dbus.Error{}
+	}
 	return nil
 }
 
