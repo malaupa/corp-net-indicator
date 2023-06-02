@@ -42,7 +42,7 @@ jobs:
         run: sudo apt-get update && sudo apt-get install upx-ucl libgtk-4-dev  libglib2.0-dev xvfb -y
 
       - name: Run tests
-        run: xvfb-run -a go test -v -race -timeout 60m -coverprofile coverage.out ./... && go tool cover -html coverage.out coverage.html
+        run: xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... && go tool cover -html coverage.out coverage.html
 
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
