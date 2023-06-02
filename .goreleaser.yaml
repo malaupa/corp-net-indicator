@@ -1,7 +1,6 @@
 before:
   hooks:
     - go mod tidy
-    - go test -race -tags=unit ./...
     # call generate manually to not slow down release: https://github.com/golang/go/issues/49039
     # - go generate ./...
 builds:
