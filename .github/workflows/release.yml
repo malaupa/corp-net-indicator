@@ -30,7 +30,13 @@ jobs:
           go-version: stable
 
       - name: Run tests
-        run: xvfb-run -a go test -v -race -timeout 60m -coverprofile cover.out ./...
+        run: xvfb-run -a go test -v -race -timeout 60m -coverprofile coverage.out ./... && go tool cover -html coverage.out coverage.html
+
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: code-coverage-report
+          path: coverage.html
 
       - name: Release
         uses: goreleaser/goreleaser-action@v4

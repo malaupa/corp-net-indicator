@@ -14,8 +14,11 @@
 # Dependency directories (remove the comment below to include it)
 # vendor/
 
+coverage.out
+coverage.html
 dist/
 /main
 /log
 /server_log
 /start.sh
+
