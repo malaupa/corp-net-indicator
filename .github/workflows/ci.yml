@@ -43,9 +43,8 @@ jobs:
 
       - name: Run tests
         run: |+
-          set -o pipefail
           xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... | tee test.out
-          set +o pipefail
+          export TEST_RESULT=${PIPESTATUS[0]}
           go tool cover -html coverage.out -o coverage.html
           cat test.out | awk '
             BEGIN {
@@ -120,6 +119,7 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
+            $TEST_RESULT
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
