@@ -78,7 +78,7 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          go tool cover -func coverage.out | awk '
+          go tool cover -func coverage.out | awk -v baseUrl="$(git remote get-url origin)" '
             function bar(cov) {
               if (cov >= 95) {
                   return ":green_square::green_square::green_square::green_square:"
@@ -96,11 +96,11 @@ jobs:
               printf("## Coverage\n\n")
               details = "<details>\n<summary>Coverage Details</summary>\n\n"
             }
-            {
-              if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+)$/,f)) {
+            $1 !~ /total:/ {
+              if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+):$/,f)) {
                 cov = c[1]+0
                 file = f[1]
-                details = sprintf("%s%s %s %s%s\n", details, bar(cov), $3, file, $2)
+                details = sprintf("%s%s %6s %-40s [%s](%s)\n", details, bar(cov), $3, $2, file)
               }
               total = $NF
             }
