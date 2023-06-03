@@ -100,7 +100,8 @@ jobs:
               if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+):$/,f)) {
                 cov = c[1]+0
                 file = f[1]
-                details = sprintf("%s%s %6s %-40s [%s](%s)\n", details, bar(cov), $3, $2, file)
+                sub(/:/, "#L", file)
+                details = sprintf("%s%s %6s %-40s [%s](%s)\n", details, bar(cov), $3, $2, file, file)
               }
               total = $NF
             }
