@@ -45,7 +45,6 @@ jobs:
         run: |+
           xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... | tee test.out
           go tool cover -html coverage.out -o coverage.html
-          TOTAL_COVERAGE=$(go tool cover -func coverage.out | tail -1 | awk '{ print $NF }')
           cat test.out | awk '
             BEGIN {
               printf("## Test Result\n\n")
@@ -58,28 +57,62 @@ jobs:
             $1 ~ /---/ { 
               if ( $2 ~ /FAIL:/ ) { 
                 failed++ 
-                # details = sprintf("%s:red_circle: %s\n", details, $3)
-                details = sprintf("%s:red_circle: <details>\n<summary>%s</summary>\n\n```%s```\n\n</details>\n\n", details, $3, error)
+                details = sprintf("%s:red_circle: %s %s\n", details, $3, $4)
+                details = sprintf("%s<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
               }
               if ( $2 ~ /SKIP:/) {
                 skipped++
                 details = sprintf("%s:white_circle: %s\n", details, $3)
               }
               if ( $2 ~ /PASS:/) {
-                details = sprintf("%s:green_circle: %s\n", details, $3)
+                details = sprintf("%s:green_circle: %s %s\n", details, $3, $4)
               }
             } 
             { error = error$0"\n" }
             END { 
               if (failed > 0) {
-                printf(":broken_heart: %d failed of %d Tests\n\n", failed, count)
+                printf(":broken_heart: %d Test(s) failed of %d Tests\n\n", failed, count)
               } else {
                 printf(":raised_hands: %d Tests pass\n\n", count)
               }
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          printf "## Coverage\n\nTotal coverage: %s\n" $TOTAL_COVERAGE >> $GITHUB_STEP_SUMMARY
+          go tool cover -func coverage.out | awk '
+            function bar(cov) {
+              if (cov >= 95) {
+                  return ":green_square::green_square::green_square::green_square:"
+                } else if (cov >= 75) {
+                  return ":green_square::green_square::green_square::red_square:"
+                } else if (cov >= 50) {
+                  return ":green_square::green_square::red_square::red_square:"
+                } else if (cov >= 25) {
+                  return ":green_square::red_square::red_square::red_square:"
+                } else {
+                  return ":red_square::red_square::red_square::red_square:"
+                }
+            }
+            BEGIN {
+              printf("## Coverage\n\n")
+              details = "<details>\n<summary>Coverage Details</summary>\n\n"
+            }
+            {
+              if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+)$/,f)) {
+                cov = c[1]+0
+                file = f[1]
+                details = sprintf("%s%s %s %s%s\n", details, bar(cov), $3, file, $2)
+              }
+              total = $NF
+            }
+            END {
+              cov = 0
+              if (match(total,/^([0-9.]+)%$/,c)) {
+                cov += c[1]
+              }
+              printf("Total coverage: %s %s\n", bar(cov), total)
+              details = details"\n</details>\n\n"
+              print(details)
+            }' >> $GITHUB_STEP_SUMMARY
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
