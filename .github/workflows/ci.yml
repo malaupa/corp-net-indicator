@@ -58,8 +58,8 @@ jobs:
             $1 ~ /---/ { 
               if ( $2 ~ /FAIL:/ ) { 
                 failed++ 
-                details = sprintf("%s:red_circle: %s\n", details, $3)
-                details = sprintf("%s<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
+                # details = sprintf("%s:red_circle: %s\n", details, $3)
+                details = sprintf("%s:red_circle: <details>\n<summary>%s</summary>\n\n```%s```\n\n</details>\n\n", details, $3, error)
               }
               if ( $2 ~ /SKIP:/) {
                 skipped++
@@ -79,7 +79,7 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          echo "## Coverage\n\nTotal coverage: $TOTAL_COVERAGE\n" >> $GITHUB_STEP_SUMMARY
+          printf "## Coverage\n\nTotal coverage: %s\n" $TOTAL_COVERAGE >> $GITHUB_STEP_SUMMARY
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
