@@ -79,7 +79,47 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          go tool cover -func coverage.out | awk -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
+          # go tool cover -func coverage.out | awk -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
+          #   function bar(cov) {
+          #     if (cov >= 95) {
+          #         return ":green_square::green_square::green_square::green_square:"
+          #       } else if (cov >= 75) {
+          #         return ":green_square::green_square::green_square::red_square:"
+          #       } else if (cov >= 50) {
+          #         return ":green_square::green_square::red_square::red_square:"
+          #       } else if (cov >= 25) {
+          #         return ":green_square::red_square::red_square::red_square:"
+          #       } else {
+          #         return ":red_square::red_square::red_square::red_square:"
+          #       }
+          #   }
+          #   BEGIN {
+          #     printf("## Coverage\n\n")
+          #     details = "<details>\n<summary>Coverage Details</summary>\n\n"
+          #     details = details"|Coverage|Function|File|\n"
+          #     details = details"|-|-|-|\n"
+          #   }
+          #   $1 !~ /total:/ {
+          #     if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+):$/,f)) {
+          #       cov = c[1]+0
+          #       file = f[1]
+          #       sub(/:/, "#L", file)
+          #       details = sprintf("%s|%s %s|%s|[%s](%s%s)|\n", details, bar(cov), $3, $2, file, baseUrl, file)
+          #     }
+          #   }
+          #   $1 ~ /total:/ {
+          #     total = $NF
+          #   }
+          #   END {
+          #     cov = 0
+          #     if (match(total,/^([0-9.]+)%$/,c)) {
+          #       cov += c[1]
+          #     }
+          #     printf("Total coverage: %s %s\n", bar(cov), total)
+          #     details = details"\n</details>\n\n"
+          #     print(details)
+          #   }' >> $GITHUB_STEP_SUMMARY
+          cat coverage.out | awk -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
             function bar(cov) {
               if (cov >= 95) {
                   return ":green_square::green_square::green_square::green_square:"
@@ -96,31 +136,51 @@ jobs:
             BEGIN {
               printf("## Coverage\n\n")
               details = "<details>\n<summary>Coverage Details</summary>\n\n"
-              details = details"|Coverage|Function|File|\n"
+              details = details"|Coverage|File|Uncovered Lines|\n"
               details = details"|-|-|-|\n"
+              file = ""
             }
-            $1 !~ /total:/ {
-              if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+):$/,f)) {
-                cov = c[1]+0
+            $1 !~ /mode:/ {
+              if (match($1,/^[^/]+([^:]+):([0-9]+).[0-9]+,([0-9]+).[0-9]+/,f)) {
+                if (file != "" && file != f[1] ) {
+                  fileCoverage = fileCovered/fileStatements*100
+                  uncoveredLines = sprintf("%s[%s-%s](%s%s#L%s-L%s)", uncoveredLines, lineStart, lineEnd, baseUrl, file,  lineStart, lineEnd)
+                  details = sprintf("%s|%s %.1f%|%s|%s|\n", details, bar(fileCoverage), fileCoverage, file, uncoveredLines)
+                  fileCovered = 0
+                  fileStatements = 0
+                  uncoveredLines = ""
+                  lineStart = ""
+                  lineEnd = ""
+                } 
                 file = f[1]
-                sub(/:/, "#L", file)
-                details = sprintf("%s|%s %s|%s|[%s](%s%s)|\n", details, bar(cov), $3, $2, file, baseUrl, file)
+                statements += $2
+                fileStatements += $2
+                if ($3 != "0") {
+                  covered += $2
+                  fileCovered += $2
+                  next
+                } 
+                if (lineStart == "" && lineEnd == "") {
+                  lineStart = f[2]
+                  lineEnd = f[3]
+                  next
+                }
+                if (lineEnd+0 == f[2]+0 || lineEnd+1 == f[2]+0) {
+                  lineEnd = f[3]
+                  next
+                } 
+                uncoveredLines = sprintf("%s[%s-%s](%s%s#L%s-L%s), ", uncoveredLines, lineStart, lineEnd, baseUrl, file,  lineStart, lineEnd)
+                lineStart = f[2]
+                lineEnd = f[3]
               }
-            }
-            $1 ~ /total:/ {
-              total = $NF
             }
             END {
-              cov = 0
-              if (match(total,/^([0-9.]+)%$/,c)) {
-                cov += c[1]
-              }
-              printf("Total coverage: %s %s\n", bar(cov), total)
+              total = covered/statements*100
+              printf("Total coverage: %s %.1f%\n", bar(total), total)
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-            echo "$TEST_RESULT"
-            exit $TEST_RESULT
+          exit $TEST_RESULT
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
