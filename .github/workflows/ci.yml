@@ -48,7 +48,7 @@ jobs:
           TOTAL_COVERAGE=$(go tool cover -func coverage.out | tail -1 | awk '{ print $NF }')
           cat test.out | awk '
             BEGIN {
-              printf("# Test Summary\n---\n\n")
+              printf("## Test Result\n\n")
               details = "<details>\n<summary>Test Details</summary>\n\n"
             }
             $1 ~ /===/ { 
@@ -59,7 +59,7 @@ jobs:
               if ( $2 ~ /FAIL:/ ) { 
                 failed++ 
                 details = sprintf("%s:red_circle: %s\n", details, $3)
-                details = sprintf("%s\n<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
+                details = sprintf("%s<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
               }
               if ( $2 ~ /SKIP:/) {
                 skipped++
@@ -69,7 +69,7 @@ jobs:
                 details = sprintf("%s:green_circle: %s\n", details, $3)
               }
             } 
-            { error = error$0 }
+            { error = error$0"\n" }
             END { 
               if (failed > 0) {
                 printf(":broken_heart: %d failed of %d Tests\n\n", failed, count)
@@ -79,7 +79,7 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          echo "# Coverage Summary\n\nTotal coverage: $TOTAL_COVERAGE\n"
+          echo "## Coverage\n\nTotal coverage: $TOTAL_COVERAGE\n" >> $GITHUB_STEP_SUMMARY
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
