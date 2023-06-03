@@ -144,7 +144,9 @@ jobs:
               if (match($1,/^[^/]+([^:]+):([0-9]+).[0-9]+,([0-9]+).[0-9]+/,f)) {
                 if (file != "" && file != f[1] ) {
                   fileCoverage = fileCovered/fileStatements*100
-                  uncoveredLines = sprintf("%s[%s-%s](%s%s#L%s-L%s)", uncoveredLines, lineStart, lineEnd, baseUrl, file,  lineStart, lineEnd)
+                  if (lineStart != "" && lineEnd != "") {
+                    uncoveredLines = sprintf("%s[%s-%s](%s%s#L%s-L%s)", uncoveredLines, lineStart, lineEnd, baseUrl, file,  lineStart, lineEnd)
+                  }
                   details = sprintf("%s|%s %.1f%|%s|%s|\n", details, bar(fileCoverage), fileCoverage, file, uncoveredLines)
                   fileCovered = 0
                   fileStatements = 0
