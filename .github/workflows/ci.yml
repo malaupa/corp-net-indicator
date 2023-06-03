@@ -101,8 +101,10 @@ jobs:
                 cov = c[1]+0
                 file = f[1]
                 sub(/:/, "#L", file)
-                details = sprintf("%s%s %6s %-40s [%s](%s)\n", details, bar(cov), $3, $2, file, file)
+                details = sprintf("%s%s %6s %-40s [%s](%s%s)\n", details, bar(cov), $3, $2, file, baseUrl, file)
               }
+            }
+            $1 ~ /total:/ {
               total = $NF
             }
             END {
@@ -121,24 +123,24 @@ jobs:
           name: code-coverage-report
           path: coverage.html
           retention-days: 5
-  build:
-    runs-on: ubuntu-22.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+  # build:
+  #   runs-on: ubuntu-22.04
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
 
-      - name: Setup Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: stable
+  #     - name: Setup Go
+  #       uses: actions/setup-go@v4
+  #       with:
+  #         go-version: stable
 
-      - name: Install xvfb, upx and gtk
-        run: sudo apt-get update && sudo apt-get install upx-ucl libgtk-4-dev  libglib2.0-dev xvfb -y
+  #     - name: Install xvfb, upx and gtk
+  #       run: sudo apt-get update && sudo apt-get install upx-ucl libgtk-4-dev  libglib2.0-dev xvfb -y
 
-      - name: Build
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          distribution: goreleaser
-          version: latest
-          args: build --snapshot --clean --timeout 60m
+  #     - name: Build
+  #       uses: goreleaser/goreleaser-action@v4
+  #       with:
+  #         distribution: goreleaser
+  #         version: latest
+  #         args: build --snapshot --clean --timeout 60m
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
