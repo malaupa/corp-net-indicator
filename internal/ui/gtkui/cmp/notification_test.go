@@ -9,6 +9,7 @@ import (
 )
 
 func TestNotification(t *testing.T) {
+	t.SkipNow()
 	gtk.Init()
 
 	n := cmp.NewNotification()

@@ -78,7 +78,7 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-          go tool cover -func coverage.out | awk -v baseUrl="$(git remote get-url origin)" '
+          go tool cover -func coverage.out | awk -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
             function bar(cov) {
               if (cov >= 95) {
                   return ":green_square::green_square::green_square::green_square:"
