@@ -42,14 +42,64 @@ jobs:
         run: sudo apt-get update && sudo apt-get install upx-ucl libgtk-4-dev  libglib2.0-dev xvfb -y
 
       - name: Run tests
-        run: xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... && go tool cover -html coverage.out -o coverage.html
-
+        run: |+
+          xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... | tee test.out
+          go tool cover -html coverage.out -o coverage.html
+          TOTAL_COVERAGE=$(go tool cover -func coverage.out | tail -1 | awk '{ print $NF }')
+          cat test.out | awk '
+            BEGIN {
+              printf("# Test Summary\n---\n\n")
+              details = "<details>\n<summary>Test Details</summary>\n\n"
+            }
+            $1 ~ /===/ { 
+              count++
+              error = ""
+            }
+            $1 ~ /---/ { 
+              if ( $2 ~ /FAIL:/ ) { 
+                failed++ 
+                details = sprintf("%s:red_circle: %s\n", details, $3)
+                details = sprintf("%s\n<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
+              }
+              if ( $2 ~ /SKIP:/) {
+                skipped++
+                details = sprintf("%s:white_circle: %s\n", details, $3)
+              }
+              if ( $2 ~ /PASS:/) {
+                details = sprintf("%s:green_circle: %s\n", details, $3)
+              }
+            } 
+            { error = error$0 }
+            END { 
+              if (failed > 0) {
+                printf(":broken_heart: %d failed of %d Tests\n\n", failed, count)
+              } else {
+                printf(":raised_hands: %d Tests pass\n\n", count)
+              }
+              details = details"\n</details>\n\n"
+              print(details)
+            }' >> $GITHUB_STEP_SUMMARY
+          echo "# Coverage Summary\n\nTotal coverage: $TOTAL_COVERAGE\n"
       - name: Archive code coverage results
+        if: ${{ success() }}
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
           path: coverage.html
           retention-days: 5
+  build:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: stable
+
+      - name: Install xvfb, upx and gtk
+        run: sudo apt-get update && sudo apt-get install upx-ucl libgtk-4-dev  libglib2.0-dev xvfb -y
 
       - name: Build
         uses: goreleaser/goreleaser-action@v4

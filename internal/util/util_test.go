@@ -15,6 +15,6 @@ func TestFormatDate(t *testing.T) {
 }
 
 func TestFormatValue(t *testing.T) {
-	assert.Equal(t, "-", util.FormatValue(""))
-	assert.Equal(t, "value", util.FormatValue("value"))
+	assert.Equal(t, "-1", util.FormatValue(""))
+	assert.Equal(t, "value1", util.FormatValue("value"))
 }
