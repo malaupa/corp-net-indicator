@@ -95,13 +95,15 @@ jobs:
             BEGIN {
               printf("## Coverage\n\n")
               details = "<details>\n<summary>Coverage Details</summary>\n\n"
+              details = details"|Coverage|Function|File|\n"
+              details = details"|-|-|-|\n"
             }
             $1 !~ /total:/ {
               if (match($3,/^([0-9.]+)%$/,c) && match($1,/^[^/]+(.+):$/,f)) {
                 cov = c[1]+0
                 file = f[1]
                 sub(/:/, "#L", file)
-                details = sprintf("%s%s %6s %-40s [%s](%s%s)\n", details, bar(cov), $3, $2, file, baseUrl, file)
+                details = sprintf("%s|%s %s|%s|[%s](%s%s)|\n", details, bar(cov), $3, $2, file, baseUrl, file)
               }
             }
             $1 ~ /total:/ {
