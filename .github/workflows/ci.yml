@@ -119,7 +119,8 @@ jobs:
               details = details"\n</details>\n\n"
               print(details)
             }' >> $GITHUB_STEP_SUMMARY
-            $TEST_RESULT
+            echo "$TEST_RESULT"
+            exit $TEST_RESULT
       - name: Archive code coverage results
         if: ${{ success() }}
         uses: actions/upload-artifact@v3
