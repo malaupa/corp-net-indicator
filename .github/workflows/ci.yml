@@ -79,7 +79,7 @@ jobs:
             } 
             $1 ~ /Test:/ {
               error = error$0"\n"
-              errorSummary = sprintf("%s%s</br>```%s```</br>", errorSummary, errorLink, error)
+              errorSummary = sprintf("%s%s\n\n```\n%s```\n\n", errorSummary, errorLink, error)
               errorLink = ""
               error = ""
               next
