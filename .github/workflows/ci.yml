@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
 
 jobs:
   lint:
@@ -46,7 +47,7 @@ jobs:
 
       - name: Process results
         if: always()
-        uses: malaupa/go-test-coverage-summary-action@v0.0.5
+        uses: malaupa/go-test-coverage-summary-action@v0.0.6
         with:
           with_archive: true
         # run: |+
