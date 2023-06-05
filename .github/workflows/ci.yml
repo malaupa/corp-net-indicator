@@ -47,7 +47,7 @@ jobs:
 
       - name: Process results
         if: always()
-        uses: malaupa/go-test-coverage-summary-action@v0.0.8
+        uses: malaupa/go-test-coverage-summary-action@v0.0.9
         with:
           with_archive: true
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
