@@ -47,7 +47,14 @@ jobs:
 
       - name: Process results
         if: always()
-        uses: malaupa/go-test-coverage-summary-action@v0.0.11
+        uses: malaupa/go-test-coverage-summary-action@v0.1.0
         with:
           with_archive: true
+
+      - name: Build
+        uses: goreleaser/goreleaser-action@v4
+        with:
+          distribution: goreleaser
+          version: latest
+          args: build --clean --timeout 60m --snapshot
 # yaml-language-server: $schema=https://raw.githubusercontent.com/SchemaStore/schemastore/master/src/schemas/json/github-workflow.json
