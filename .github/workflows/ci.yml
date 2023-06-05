@@ -44,7 +44,7 @@ jobs:
       - name: Run test
         run: xvfb-run -a go test -v -timeout 60m -coverprofile cover.out ./... | tee test.out && exit ${PIPESTATUS[0]}
 
-      - name: Run tests
+      - name: Process results
         if: always()
         run: |+
           go tool cover -html cover.out -o coverage.html
