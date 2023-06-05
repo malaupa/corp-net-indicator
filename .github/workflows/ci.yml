@@ -48,20 +48,25 @@ jobs:
         if: always()
         run: |+
           go tool cover -html cover.out -o coverage.html
-          awk '
+          awk -v workspace="$GITHUB_WORKSPACE" -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
             BEGIN {
               printf("## Test Result\n\n")
               details = "<details>\n<summary>Test Details</summary>\n\n"
+              # workspace = sub(/\//, "\/", workspace)
+              pattern = workspace"(.+):([0-9]+)$"
             }
             $1 ~ /===/ { 
               count++
+              errorLink = ""
               error = ""
+              errorSummary = ""
+              next
             }
             $1 ~ /---/ { 
               if ( $2 ~ /FAIL:/ ) { 
                 failed++ 
                 details = sprintf("%s:red_circle: %s %s\n", details, $3, $4)
-                details = sprintf("%s<details>\n<summary>Log</summary>\n\n```%s```\n\n</details>\n\n", details, error)
+                details = sprintf("%s<details>\n<summary>Log</summary>\n\n%s\n\n</details>\n\n", details, errorSummary)
               }
               if ( $2 ~ /SKIP:/) {
                 skipped++
@@ -70,8 +75,21 @@ jobs:
               if ( $2 ~ /PASS:/) {
                 details = sprintf("%s:green_circle: %s %s\n", details, $3, $4)
               }
+              next
             } 
-            { error = error$0"\n" }
+            $1 ~ /Test:/ {
+              error = error$0"\n"
+              errorSummary = sprintf("%s%s</br>```%s```</br>", errorSummary, errorLink, error)
+              errorLink = ""
+              error = ""
+              next
+            }
+            { 
+              if(match($0,pattern,e)) {
+                errorLink = sprintf("[%s:%s](%s%s#L%s)", e[1], e[2], baseUrl, e[1], e[2])
+              }
+              error = error$0"\n" 
+            }
             END { 
               if (failed > 0) {
                 printf(":broken_heart: %d Test(s) failed of %d Tests\n\n", failed, count)
@@ -146,6 +164,7 @@ jobs:
             }' cover.out >> $GITHUB_STEP_SUMMARY
           exit $TEST_RESULT
       - name: Archive code coverage results
+        if: always()
         uses: actions/upload-artifact@v3
         with:
           name: code-coverage-report
