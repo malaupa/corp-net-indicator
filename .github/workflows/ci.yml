@@ -46,7 +46,7 @@ jobs:
 
       - name: Process results
         if: always()
-        uses: malaupa/go-test-coverage-summary-action@v0.0.4
+        uses: malaupa/go-test-coverage-summary-action@v0.0.5
         with:
           with_archive: true
         # run: |+
@@ -166,13 +166,13 @@ jobs:
         #       print(details)
         #     }' cover.out >> $GITHUB_STEP_SUMMARY
         #   exit $TEST_RESULT
-      - name: Archive code coverage results
-        if: always()
-        uses: actions/upload-artifact@v3
-        with:
-          name: code-coverage-report
-          path: coverage.html
-          retention-days: 5
+      # - name: Archive code coverage results
+      #   if: always()
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: code-coverage-report
+      #     path: coverage.html
+      #     retention-days: 5
   # build:
   #   runs-on: ubuntu-22.04
   #   steps:
