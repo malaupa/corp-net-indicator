@@ -80,7 +80,7 @@ jobs:
               }
               details = details"\n</details>\n\n"
               print(details)
-            }' cover.out >> $GITHUB_STEP_SUMMARY
+            }' test.out >> $GITHUB_STEP_SUMMARY
           awk -v baseUrl="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/blob/$GITHUB_REF_NAME" '
             function bar(cov) {
               if (cov >= 95) {
@@ -143,7 +143,7 @@ jobs:
               printf("Total coverage: %s %.1f%\n", bar(total), total)
               details = details"\n</details>\n\n"
               print(details)
-            }' test.out >> $GITHUB_STEP_SUMMARY
+            }' cover.out >> $GITHUB_STEP_SUMMARY
           exit $TEST_RESULT
       - name: Archive code coverage results
         uses: actions/upload-artifact@v3
