@@ -29,14 +29,15 @@ jobs:
         with:
           go-version: stable
 
-      - name: Run tests
-        run: xvfb-run -a go test -v -timeout 60m -coverprofile coverage.out ./... && go tool cover -html coverage.out -o coverage.html
+      - name: Run test
+        run: xvfb-run -a go test -v -timeout 60m -coverprofile cover.out ./... | tee test.out
+        shell: bash
 
-      - name: Archive code coverage results
-        uses: actions/upload-artifact@v3
+      - name: Process results
+        if: always()
+        uses: malaupa/go-test-coverage-summary-action@v1
         with:
-          name: code-coverage-report
-          path: coverage.html
+          with_archive: true
 
       - name: Release
         uses: goreleaser/goreleaser-action@v4
